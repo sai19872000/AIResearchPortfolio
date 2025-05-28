@@ -1,0 +1,525 @@
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { SkillBar } from "@/components/skill-bar";
+import { ProjectCard } from "@/components/project-card";
+import { ContactForm } from "@/components/contact-form";
+import { NeuralBackground } from "@/components/neural-background";
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Linkedin,
+  Github,
+  Download,
+  Brain,
+  Bot,
+  Settings,
+  Code,
+  Eye,
+  Users,
+  Menu,
+  CheckCircle,
+  ExternalLink,
+  Quote,
+} from "lucide-react";
+
+export default function Home() {
+  const [activeSection, setActiveSection] = useState("home");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const { data: portfolioData, isLoading } = useQuery({
+    queryKey: ["/api/portfolio"],
+  });
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ["home", "about", "experience", "projects", "publications", "contact"];
+      const currentSection = sections.find((section) => {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          return rect.top <= 100 && rect.bottom >= 100;
+        }
+        return false;
+      });
+      
+      if (currentSection) {
+        setActiveSection(currentSection);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    setIsMenuOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
+  const data = portfolioData || {};
+
+  return (
+    <div className="min-h-screen">
+      {/* Navigation */}
+      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="text-xl font-bold text-primary">
+              Sai Teja Pusuluri
+            </div>
+            <div className="hidden md:flex space-x-8">
+              {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+                <button
+                  key={item}
+                  onClick={() => scrollToSection(item.toLowerCase())}
+                  className={`nav-link text-foreground hover:text-accent transition-colors ${
+                    activeSection === item.toLowerCase() ? "text-accent" : ""
+                  }`}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </div>
+          
+          {isMenuOpen && (
+            <div className="md:hidden mt-4 pb-4 border-t border-border">
+              <div className="flex flex-col space-y-2 pt-4">
+                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => scrollToSection(item.toLowerCase())}
+                    className="text-left py-2 hover:text-accent transition-colors"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section id="home" className="neural-bg min-h-screen flex items-center text-white relative">
+        <NeuralBackground />
+        <div className="max-w-6xl mx-auto px-6 py-24 relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div className="animate-slide-up">
+              <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+                Generative AI
+                <span className="block text-accent">Expert</span>
+              </h1>
+              <p className="text-xl mb-8 text-gray-300 leading-relaxed">
+                {data.personal?.overview || "PhD in Physics with 8+ years of industry experience in Generative AI, Agentic AI Workflows, and MLOps. Leading innovation in AI solutions that transform organizations."}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  onClick={() => scrollToSection("contact")}
+                  className="bg-accent hover:bg-accent/90 text-white px-8 py-3"
+                >
+                  Get In Touch
+                </Button>
+                <Button
+                  variant="outline"
+                  className="border-white text-white hover:bg-white hover:text-primary px-8 py-3"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Resume
+                </Button>
+              </div>
+              <div className="flex space-x-6 mt-8">
+                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                  <Linkedin className="w-6 h-6" />
+                </a>
+                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                  <Github className="w-6 h-6" />
+                </a>
+                <a href="mailto:sai19872000@gmail.com" className="text-gray-300 hover:text-white transition-colors">
+                  <Mail className="w-6 h-6" />
+                </a>
+              </div>
+            </div>
+            <div className="hidden md:block animate-float">
+              <img
+                src="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
+                alt="AI technology abstract visualization"
+                className="rounded-2xl shadow-2xl w-full h-auto"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-24 bg-background">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4">About Me</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Passionate about pushing the boundaries of artificial intelligence and machine learning
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <img
+                src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
+                alt="Modern tech workspace with AI development setup"
+                className="rounded-xl shadow-lg w-full h-auto"
+              />
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-primary mb-6">Professional Journey</h3>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                With a PhD in Physics and Neural Networks from Ohio University, I've dedicated my career to advancing 
+                the field of artificial intelligence. Currently serving as Manager/Lead - Generative AI at Discover, 
+                I pioneer agentic AI workflows and lead cross-functional teams to deliver scalable AI solutions.
+              </p>
+              <p className="text-muted-foreground mb-8 leading-relaxed">
+                My experience spans from fraud detection at JP Morgan Chase to cutting-edge research in organoid 
+                segmentation at Ohio University. I'm passionate about translating complex AI research into 
+                production-ready solutions that create real business value.
+              </p>
+
+              <div className="space-y-6">
+                <SkillBar skill="Generative AI" percentage={95} />
+                <SkillBar skill="MLOps & Production" percentage={90} />
+                <SkillBar skill="Team Leadership" percentage={88} />
+                <SkillBar skill="Research & Publications" percentage={92} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Experience Section */}
+      <section id="experience" className="py-24 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4">Professional Experience</h2>
+            <p className="text-xl text-muted-foreground">Building AI solutions that transform industries</p>
+          </div>
+
+          <div className="space-y-8">
+            {data.experience?.map((exp: any, index: number) => (
+              <Card key={index} className="p-8 hover:border-accent transition-colors">
+                <CardContent className="p-0">
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
+                    <div>
+                      <h3 className="text-2xl font-bold text-primary mb-2">{exp.title}</h3>
+                      <p className="text-accent font-medium text-lg">{exp.company}</p>
+                    </div>
+                    <div className="text-muted-foreground font-medium">{exp.period}</div>
+                  </div>
+                  <ul className="space-y-3 text-muted-foreground">
+                    {exp.achievements?.map((achievement: string, achievementIndex: number) => (
+                      <li key={achievementIndex} className="flex items-start">
+                        <CheckCircle className="text-accent mr-3 mt-1 flex-shrink-0 w-4 h-4" />
+                        <span>{achievement}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Projects Section */}
+      <section id="projects" className="py-24 bg-background">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4">Featured Projects</h2>
+            <p className="text-xl text-muted-foreground">Innovative AI solutions and research applications</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {data.projects?.map((project: any, index: number) => (
+              <ProjectCard
+                key={index}
+                title={project.title}
+                description={project.description}
+                technologies={project.technologies}
+                type={project.type}
+                imageUrl={getProjectImage(project.type)}
+                isProprietary={project.title.includes("Fraud Detection")}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Publications Section */}
+      <section id="publications" className="py-24 bg-muted/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4">Publications & Research</h2>
+            <p className="text-xl text-muted-foreground">Contributing to the advancement of AI and scientific research</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {data.publications?.map((publication: any, index: number) => (
+              <Card key={index} className="p-6 hover:border-accent transition-colors">
+                <CardContent className="p-0">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-primary mb-2">
+                        {publication.title}
+                      </h3>
+                      <p className="text-muted-foreground text-sm mb-2">
+                        {publication.authors}, {publication.journal}
+                      </p>
+                    </div>
+                    <div className="ml-4">
+                      <Badge 
+                        variant={publication.status === "published" ? "default" : "secondary"}
+                        className={publication.status === "published" ? "bg-green-100 text-green-700" : "bg-accent/10 text-accent"}
+                      >
+                        {publication.status === "published" ? "Published" : "Pending"}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="flex space-x-4 text-sm">
+                    <a href="#" className="text-accent hover:text-primary transition-colors flex items-center">
+                      {publication.status === "published" ? (
+                        <>
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          View Paper
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          Preprint
+                        </>
+                      )}
+                    </a>
+                    {publication.status === "published" && (
+                      <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center">
+                        <Quote className="w-3 h-3 mr-1" />
+                        Cite
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button className="bg-accent hover:bg-accent/90 text-white px-8 py-3">
+              View All Publications
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Skills & Technologies */}
+      <section className="py-24 bg-background">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-primary mb-4">Skills & Technologies</h2>
+            <p className="text-xl text-muted-foreground">Cutting-edge tools and frameworks for AI innovation</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Brain,
+                title: "Agentic AI",
+                skills: ["LangGraph, CrewAI", "MCP Servers", "Agentic Tools", "Multi-Agent Systems"],
+              },
+              {
+                icon: Bot,
+                title: "Generative AI",
+                skills: ["OpenAI, Claude, Gemini", "Llama, Mistral", "LoRA, QLoRA", "RAG, Chain-of-Thought"],
+              },
+              {
+                icon: Settings,
+                title: "MLOps",
+                skills: ["Docker, AWS SageMaker", "CI-CD Pipelines", "VLLM, APIs", "Model Monitoring"],
+              },
+              {
+                icon: Code,
+                title: "Programming",
+                skills: ["Python, SQL, Bash", "TensorFlow, PyTorch", "Keras, Scikit-learn", "Git, Jupyter"],
+              },
+              {
+                icon: Eye,
+                title: "Computer Vision",
+                skills: ["CNNs, YOLO", "Image Segmentation", "Object Detection", "Medical Imaging"],
+              },
+              {
+                icon: Users,
+                title: "Leadership",
+                skills: ["Team Management", "Mentoring", "Cross-functional Collaboration", "Stakeholder Engagement"],
+              },
+            ].map((skillGroup, index) => (
+              <div key={index} className="text-center">
+                <div className="bg-accent/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <skillGroup.icon className="text-accent text-2xl w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold text-primary mb-4">{skillGroup.title}</h3>
+                <div className="space-y-2 text-muted-foreground">
+                  {skillGroup.skills.map((skill, skillIndex) => (
+                    <p key={skillIndex}>{skill}</p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-24 bg-primary text-white">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
+            <p className="text-xl text-gray-300">Let's discuss how AI can transform your organization</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-2xl font-bold mb-6">Contact Information</h3>
+              <div className="space-y-4">
+                <div className="flex items-center">
+                  <Mail className="text-accent mr-4 w-5 h-5" />
+                  <a href="mailto:sai19872000@gmail.com" className="hover:text-accent transition-colors">
+                    sai19872000@gmail.com
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <Phone className="text-accent mr-4 w-5 h-5" />
+                  <a href="tel:+17408186309" className="hover:text-accent transition-colors">
+                    (+1) 740-818-6309
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <MapPin className="text-accent mr-4 w-5 h-5" />
+                  <span>Lewis Center, Ohio, USA</span>
+                </div>
+                <div className="flex items-center">
+                  <Linkedin className="text-accent mr-4 w-5 h-5" />
+                  <a href="#" className="hover:text-accent transition-colors">
+                    Sai Teja Pusuluri
+                  </a>
+                </div>
+              </div>
+
+              <div className="mt-8">
+                <h4 className="text-lg font-semibold mb-4">Areas of Expertise</h4>
+                <ul className="space-y-2 text-gray-300">
+                  <li>• Generative AI Strategy & Implementation</li>
+                  <li>• Agentic AI Workflows</li>
+                  <li>• MLOps & Production Deployment</li>
+                  <li>• AI Team Leadership & Mentoring</li>
+                  <li>• Research & Development</li>
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <ContactForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-foreground text-gray-300 py-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-4">Sai Teja Pusuluri</h3>
+              <p className="text-gray-400 mb-4">
+                Generative AI Expert passionate about transforming organizations through innovative AI solutions.
+              </p>
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                  <Linkedin className="w-5 h-5" />
+                </a>
+                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                  <Github className="w-5 h-5" />
+                </a>
+                <a href="mailto:sai19872000@gmail.com" className="text-gray-400 hover:text-accent transition-colors">
+                  <Mail className="w-5 h-5" />
+                </a>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Quick Links</h4>
+              <ul className="space-y-2">
+                {["About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+                  <li key={item}>
+                    <button
+                      onClick={() => scrollToSection(item.toLowerCase())}
+                      className="text-gray-400 hover:text-accent transition-colors"
+                    >
+                      {item}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold text-white mb-4">Recent Focus</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>Agentic AI Workflows</li>
+                <li>LLM Fine-tuning</li>
+                <li>MLOps Best Practices</li>
+                <li>AI Research & Innovation</li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500">
+            <p>&copy; 2025 Sai Teja Pusuluri. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function getProjectImage(type: string): string {
+  switch (type.toLowerCase()) {
+    case "ai tool":
+      return "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    case "editor":
+      return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    case "research":
+      return "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    case "fintech":
+      return "https://images.unsplash.com/photo-1516110833967-0b5716ca1387?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    case "healthcare":
+      return "https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    case "mlops":
+      return "https://images.unsplash.com/photo-1555949963-aa79dcee981c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+    default:
+      return "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400";
+  }
+}
