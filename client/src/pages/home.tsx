@@ -624,7 +624,8 @@ export default function Home() {
 
       {/* Contact Section */}
       <section id="contact" className="py-24 neural-bg relative overflow-hidden text-white">
-        <div className="max-w-4xl mx-auto px-6">
+        <NeuralBackground />
+        <div className="max-w-4xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
             <p className="text-xl text-gray-300">
