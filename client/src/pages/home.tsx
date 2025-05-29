@@ -233,6 +233,8 @@ export default function Home() {
                 controls={false}
                 className="rounded-2xl shadow-2xl w-full h-auto max-w-lg"
                 onError={(e) => console.error('Video failed to load:', e)}
+                onLoadStart={() => console.log('Video loading started')}
+                onCanPlay={() => console.log('Video can play')}
               >
                 <source src="/attached_assets/AI_Expert_Intro_Video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
