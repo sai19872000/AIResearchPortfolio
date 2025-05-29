@@ -35,7 +35,7 @@ export function NeuralBackground() {
     };
 
     const animate = () => {
-      if (!canvas.width || !canvas.height) return;
+      if (!canvas || !canvas.width || !canvas.height || !ctx) return;
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
