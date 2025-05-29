@@ -54,6 +54,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Resume download endpoint
+  app.get("/api/resume", (req, res) => {
+    try {
+      const resumePath = path.join(process.cwd(), "attached_assets", "resume_pusuluri_may25.pdf");
+      
+      if (!fs.existsSync(resumePath)) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Resume file not found" 
+        });
+      }
+
+      // Set appropriate headers for PDF download
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="Sai_Teja_Pusuluri_Resume.pdf"');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(resumePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Resume download error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to download resume" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

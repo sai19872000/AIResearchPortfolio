@@ -189,6 +189,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   className="border-white text-white hover:bg-white hover:text-primary px-8 py-3 bg-transparent"
+                  onClick={() => window.open("/api/resume", "_blank")}
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Resume
