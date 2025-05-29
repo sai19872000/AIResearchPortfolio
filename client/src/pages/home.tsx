@@ -41,6 +41,7 @@ export default function Home() {
       const sections = [
         "home",
         "about",
+        "skills",
         "experience",
         "projects",
         "publications",
@@ -117,6 +118,7 @@ export default function Home() {
               {[
                 "Home",
                 "About",
+                "Skills",
                 "Experience",
                 "Projects",
                 "Publications",
@@ -149,6 +151,7 @@ export default function Home() {
                 {[
                   "Home",
                   "About",
+                  "Skills",
                   "Experience",
                   "Projects",
                   "Publications",
@@ -645,7 +648,7 @@ export default function Home() {
       </section>
 
       {/* Skills & Technologies */}
-      <section className="py-24 bg-background">
+      <section id="skills" className="py-24 bg-background">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">
@@ -865,6 +868,7 @@ export default function Home() {
               <ul className="space-y-2">
                 {[
                   "About",
+                  "Skills",
                   "Experience",
                   "Projects",
                   "Publications",
