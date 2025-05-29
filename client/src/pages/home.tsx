@@ -237,15 +237,15 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
+          <div className="grid md:grid-cols-2 gap-12 items-start">
+            <div className="order-2 md:order-1">
               <img
                 src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
                 alt="Modern tech workspace with AI development setup"
-                className="rounded-xl shadow-lg w-full h-auto"
+                className="rounded-xl shadow-lg w-full h-auto object-cover aspect-square"
               />
             </div>
-            <div>
+            <div className="order-1 md:order-2">
               <h3 className="text-2xl font-bold text-primary mb-6">
                 Professional Journey
               </h3>
@@ -262,94 +262,95 @@ export default function Home() {
                 University. I'm passionate about translating complex AI research
                 into production-ready solutions that create real business value.
               </p>
+            </div>
+          </div>
+          
+          {/* Career Timeline - Full Width Below */}
+          <div className="mt-16">
+            <h4 className="text-2xl font-bold text-primary mb-8 text-center">Career Timeline</h4>
+            <div className="relative max-w-4xl mx-auto">
+              <div className="space-y-16 py-8">
+                {/* Current Role - Top Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">2022 - Present</div>
+                      <h5 className="font-semibold text-primary">Manager/Lead - Generative AI</h5>
+                      <p className="text-sm text-muted-foreground">Discover</p>
+                      <p className="text-xs text-muted-foreground">Agentic AI, LLM Fine-tuning, Team Leadership</p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent/30 rounded-full animate-ping"></div>
+                    </div>
+                  </div>
+                </div>
 
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold text-primary mb-8">Career Timeline</h4>
-                <div className="relative max-w-2xl mx-auto">
-                  <div className="space-y-16 py-8">
-                    {/* Current Role - Top Right */}
-                    <div className="flex justify-end">
-                      <div className="timeline-item flex items-center space-x-4 max-w-xs">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-accent mb-1">2022 - Present</div>
-                          <h5 className="font-semibold text-primary">Manager/Lead - Generative AI</h5>
-                          <p className="text-sm text-muted-foreground">Discover</p>
-                          <p className="text-xs text-muted-foreground">Agentic AI, LLM Fine-tuning, Team Leadership</p>
-                        </div>
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                          <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent/30 rounded-full animate-ping"></div>
-                        </div>
+                {/* Adjunct Professor - Top Left */}
+                <div className="flex justify-start">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-accent mb-1">2023 - Present</div>
+                      <h5 className="font-semibold text-primary">Adjunct Professor</h5>
+                      <p className="text-sm text-muted-foreground">Ohio University</p>
+                      <p className="text-xs text-muted-foreground">Computer Vision, Organoid Research</p>
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Adjunct Professor - Top Left */}
-                    <div className="flex justify-start">
-                      <div className="timeline-item flex items-center space-x-4 max-w-xs">
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <div className="text-sm font-bold text-accent mb-1">2023 - Present</div>
-                          <h5 className="font-semibold text-primary">Adjunct Professor</h5>
-                          <p className="text-sm text-muted-foreground">Ohio University</p>
-                          <p className="text-xs text-muted-foreground">Computer Vision, Organoid Research</p>
-                        </div>
+                {/* JP Morgan - Center Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">2017 - 2022</div>
+                      <h5 className="font-semibold text-primary">Senior Applied AI Associate</h5>
+                      <p className="text-sm text-muted-foreground">JP Morgan Chase</p>
+                      <p className="text-xs text-muted-foreground">Fraud Detection, Neural Networks, NLP</p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    {/* JP Morgan - Center Right */}
-                    <div className="flex justify-end">
-                      <div className="timeline-item flex items-center space-x-4 max-w-xs">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-accent mb-1">2017 - 2022</div>
-                          <h5 className="font-semibold text-primary">Senior Applied AI Associate</h5>
-                          <p className="text-sm text-muted-foreground">JP Morgan Chase</p>
-                          <p className="text-xs text-muted-foreground">Fraud Detection, Neural Networks, NLP</p>
-                        </div>
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
+                {/* Nationwide Children's - Center Left */}
+                <div className="flex justify-start">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
-
-                    {/* Nationwide Children's - Center Left */}
-                    <div className="flex justify-start">
-                      <div className="timeline-item flex items-center space-x-4 max-w-xs">
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <div className="text-sm font-bold text-accent mb-1">2016 - 2017</div>
-                          <h5 className="font-semibold text-primary">Data Scientist</h5>
-                          <p className="text-sm text-muted-foreground">Nationwide Children's Hospital</p>
-                          <p className="text-xs text-muted-foreground">Bioinformatics, Medical ML</p>
-                        </div>
-                      </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-accent mb-1">2016 - 2017</div>
+                      <h5 className="font-semibold text-primary">Data Scientist</h5>
+                      <p className="text-sm text-muted-foreground">Nationwide Children's Hospital</p>
+                      <p className="text-xs text-muted-foreground">Bioinformatics, Medical ML</p>
                     </div>
+                  </div>
+                </div>
 
-                    {/* PhD - Bottom Right */}
-                    <div className="flex justify-end">
-                      <div className="timeline-item flex items-center space-x-4 max-w-xs">
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-accent mb-1">2011 - 2017</div>
-                          <h5 className="font-semibold text-primary">PhD in Physics</h5>
-                          <p className="text-sm text-muted-foreground">Ohio University</p>
-                          <p className="text-xs text-muted-foreground">Neural Networks, Research, Publications</p>
-                        </div>
-                        <div className="relative">
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                            <div className="w-4 h-4 bg-white rounded-full"></div>
-                          </div>
-                        </div>
+                {/* PhD - Bottom Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">2011 - 2017</div>
+                      <h5 className="font-semibold text-primary">PhD in Physics</h5>
+                      <p className="text-sm text-muted-foreground">Ohio University</p>
+                      <p className="text-xs text-muted-foreground">Neural Networks, Research, Publications</p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
                   </div>
