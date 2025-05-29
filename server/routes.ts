@@ -95,6 +95,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve static assets (videos, images, etc.)
+  app.use("/attached_assets", (req, res, next) => {
+    const filePath = path.join(process.cwd(), "attached_assets", req.path);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send("File not found");
+    }
+
+    // Set appropriate content type for videos
+    if (req.path.endsWith('.mp4')) {
+      res.setHeader('Content-Type', 'video/mp4');
+    } else if (req.path.endsWith('.webm')) {
+      res.setHeader('Content-Type', 'video/webm');
+    } else if (req.path.endsWith('.mov')) {
+      res.setHeader('Content-Type', 'video/quicktime');
+    }
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -101,7 +101,9 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="text-xl font-bold text-primary animate-pulse-slow">
-              <span className="gradient-text">{(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}</span>
+              <span className="gradient-text">
+                {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
+              </span>
             </div>
             <div className="hidden md:flex space-x-2">
               {[
@@ -173,7 +175,9 @@ export default function Home() {
             <div className="animate-slide-up">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
                 {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
-                <span className="block text-accent">{(data as any).personal?.title || "Generative AI Expert"}</span>
+                <span className="block text-accent">
+                  {(data as any).personal?.title || "Generative AI Expert"}
+                </span>
               </h1>
               <p className="text-xl mb-8 text-gray-300 leading-relaxed">
                 {(data as any).personal?.overview ||
@@ -192,7 +196,7 @@ export default function Home() {
                   onClick={() => window.open("/api/resume", "_blank")}
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  Download Resume
+                  Download My Resume
                 </Button>
               </div>
               <div className="flex space-x-6 mt-8">
@@ -209,7 +213,10 @@ export default function Home() {
                   <Github className="w-6 h-6" />
                 </a>
                 <a
-                  href="mailto:sai19872000@gmail.com"
+                  href={
+                    "mailto:" + (data as any).personal?.email ||
+                    "mailto:sai19872000@gmail.com"
+                  }
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Mail className="w-6 h-6" />
@@ -217,11 +224,16 @@ export default function Home() {
               </div>
             </div>
             <div className="hidden md:block animate-float">
-              <img
-                src="https://images.unsplash.com/photo-1620712943543-bcc4688e7485?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
-                alt="AI technology abstract visualization"
+              <video
+                src="/attached_assets/AI_Expert_Intro_Video.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
                 className="rounded-2xl shadow-2xl w-full h-auto"
-              />
+              >
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
@@ -699,7 +711,7 @@ export default function Home() {
                 <div className="flex items-center">
                   <Phone className="text-accent mr-4 w-5 h-5" />
                   <a
-                    href={`tel:${(data as any).personal?.phone?.replace(/\s/g, '') || "+17408186309"}`}
+                    href={`tel:${(data as any).personal?.phone?.replace(/\s/g, "") || "+17408186309"}`}
                     className="hover:text-accent transition-colors"
                   >
                     {(data as any).personal?.phone || "(+1) 740-818-6309"}
@@ -707,7 +719,10 @@ export default function Home() {
                 </div>
                 <div className="flex items-center">
                   <MapPin className="text-accent mr-4 w-5 h-5" />
-                  <span>{(data as any).personal?.location || "Lewis Center, Ohio, USA"}</span>
+                  <span>
+                    {(data as any).personal?.location ||
+                      "Lewis Center, Ohio, USA"}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <Linkedin className="text-accent mr-4 w-5 h-5" />
@@ -747,7 +762,8 @@ export default function Home() {
                 {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
               </h3>
               <p className="text-gray-400 mb-4">
-                {(data as any).personal?.bio || "Generative AI Expert passionate about transforming organizations through innovative AI solutions."}
+                {(data as any).personal?.bio ||
+                  "Generative AI Expert passionate about transforming organizations through innovative AI solutions."}
               </p>
               <div className="flex space-x-4">
                 <a
@@ -806,7 +822,11 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500">
-            <p>&copy; 2025 {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}. All rights reserved.</p>
+            <p>
+              &copy; 2025{" "}
+              {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}. All
+              rights reserved.
+            </p>
           </div>
         </div>
       </footer>
@@ -821,8 +841,6 @@ export default function Home() {
           <ArrowUp className="w-5 h-5" />
         </button>
       )}
-
-
     </div>
   );
 }
