@@ -225,18 +225,20 @@ export default function Home() {
             </div>
             <div className="hidden md:block animate-float">
               <video
-                src="/attached_assets/AI_Expert_Intro_Video.mp4"
+                key="intro-video"
+                src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`}
                 autoPlay
                 muted
                 loop
                 playsInline
                 controls={false}
                 className="rounded-2xl shadow-2xl w-full h-auto max-w-lg"
+                style={{ display: 'block' }}
                 onError={(e) => console.error('Video failed to load:', e)}
                 onLoadStart={() => console.log('Video loading started')}
                 onCanPlay={() => console.log('Video can play')}
               >
-                <source src="/attached_assets/AI_Expert_Intro_Video.mp4" type="video/mp4" />
+                <source src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>
