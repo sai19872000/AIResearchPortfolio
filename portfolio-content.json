@@ -36,33 +36,7 @@
     "subtitle": "Transforming data into intelligent solutions",
     "description": "I'm passionate about pushing the boundaries of what's possible with AI and machine learning. My journey spans academia and industry, where I've led teams in developing innovative solutions that have real-world impact.",
     "skillsTitle": "Technical Expertise",
-    "journeyTitle": "Professional Journey",
-    "journey": [
-      {
-        "year": "2024",
-        "title": "Senior AI Research Engineer",
-        "company": "TechCorp",
-        "description": "Leading cutting-edge research in neural networks and deep learning applications for autonomous systems."
-      },
-      {
-        "year": "2022",
-        "title": "Data Science Team Lead",
-        "company": "DataFlow Solutions",
-        "description": "Built and managed a team of 8 data scientists, delivering ML solutions that increased client revenue by 40%."
-      },
-      {
-        "year": "2020",
-        "title": "Machine Learning Engineer",
-        "company": "AI Innovations",
-        "description": "Developed predictive models and recommendation systems serving millions of users daily."
-      },
-      {
-        "year": "2018",
-        "title": "Research Assistant",
-        "company": "Stanford University",
-        "description": "Conducted groundbreaking research in computer vision and natural language processing during PhD studies."
-      }
-    ]
+    "journeyTitle": "Professional Journey"
   },
   "skills": {
     "agenticAI": [
@@ -121,10 +95,11 @@
       "company": "JP Morgan Chase",
       "period": "Apr. 2017 - Apr. 2022",
       "achievements": [
-        "Developed fraud detection AI/ML models, significantly enhancing the bank's ability to identify and mitigate fraudulent activities",
-        "Engineered advanced feature extraction and seasonality methods, refining predictive capabilities and improving model reliability",
-        "Researched and implemented scalable neural network and NLP solutions (CNNs, LSTMs, BERT)",
-        "Compiled comprehensive technical documentation for end-to-end model development pipelines"
+        "Developed fraud detection AI/ML models, significantly enhancing the bank’s ability to identify and mitigate fraudulent activities.",
+        "Engineered advanced feature extraction and seasonality methods, refining predictive capabilities and improving model reliability.",
+        "Researched and implemented scalable neural network and NLP solutions (CNNs, LSTMs, BERT), advancing the processing of both structured and unstructured financial data.",
+        "Compiled comprehensive technical documentation for end-to-end model development pipelines, ensuring transparency, audit readiness, and regulatory compliance.",
+        "Collaborated with business and IT stakeholders to translate requirements into production-ready solutions, deploying and troubleshooting models for seamless integration."
       ]
     },
     {
