@@ -24,11 +24,13 @@ import {
   CheckCircle,
   ExternalLink,
   Quote,
+  ArrowUp,
 } from "lucide-react";
 
 export default function Home() {
   const [activeSection, setActiveSection] = useState("home");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   const { data: portfolioData, isLoading } = useQuery({
     queryKey: ["/api/portfolio"],
@@ -49,6 +51,9 @@ export default function Home() {
       if (currentSection) {
         setActiveSection(currentSection);
       }
+
+      // Show scroll to top button when scrolled down
+      setShowScrollTop(window.scrollY > 300);
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -61,6 +66,10 @@ export default function Home() {
       element.scrollIntoView({ behavior: "smooth" });
     }
     setIsMenuOpen(false);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   if (isLoading) {
@@ -510,6 +519,52 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 bg-accent hover:bg-accent/90 text-white p-4 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 animate-bounce z-50"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Floating Navigation Menu for Mobile */}
+      <div className="fixed bottom-8 left-8 md:hidden z-50">
+        <Button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className={`bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
+            isMenuOpen ? "rotate-45" : ""
+          }`}
+          aria-label="Toggle navigation menu"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+        
+        {isMenuOpen && (
+          <div className="absolute bottom-16 left-0 mb-4 animate-slide-up">
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-border">
+              <div className="flex flex-col space-y-2">
+                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item, index) => (
+                  <button
+                    key={item}
+                    onClick={() => scrollToSection(item.toLowerCase())}
+                    className="mobile-menu-item text-left font-medium text-sm px-4 py-3 rounded-xl"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-accent rounded-full mr-3 opacity-60"></span>
+                      {item}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
