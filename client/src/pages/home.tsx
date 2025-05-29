@@ -230,8 +230,11 @@ export default function Home() {
                 muted
                 loop
                 playsInline
-                className="rounded-2xl shadow-2xl w-full h-auto"
+                controls={false}
+                className="rounded-2xl shadow-2xl w-full h-auto max-w-lg"
+                onError={(e) => console.error('Video failed to load:', e)}
               >
+                <source src="/attached_assets/AI_Expert_Intro_Video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>
@@ -245,8 +248,8 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">About Me</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Passionate about pushing the boundaries of artificial intelligence
-              and machine learning
+              {(data as any).about?.description ||
+                "Passionate about pushing the boundaries of artificial intelligence and machine learning"}
             </p>
           </div>
 
