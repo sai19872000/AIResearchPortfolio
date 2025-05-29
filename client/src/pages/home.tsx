@@ -261,12 +261,25 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div className="order-2 md:order-1">
-              <img
-                src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600"
-                alt="Modern tech workspace with AI development setup"
+            <div className="order-2 md:order-1 relative">
+              <video
+                key="galactic-journey-video"
+                src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`}
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls={false}
                 className="rounded-xl shadow-lg w-full h-auto object-cover aspect-square"
-              />
+                style={{ display: 'block' }}
+                onError={(e) => console.error('Galactic video failed to load:', e)}
+              >
+                <source src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full">
+                Generated using AI
+              </div>
             </div>
             <div className="order-1 md:order-2">
               <h3 className="text-2xl font-bold text-primary mb-6">
