@@ -608,33 +608,7 @@ export default function Home() {
                         </Badge>
                       </div>
                     </div>
-                    <div className="flex space-x-4 text-sm">
-                      <a
-                        href="#"
-                        className="text-accent hover:text-primary transition-colors flex items-center"
-                      >
-                        {publication.status === "published" ? (
-                          <>
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            View Paper
-                          </>
-                        ) : (
-                          <>
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            Preprint
-                          </>
-                        )}
-                      </a>
-                      {publication.status === "published" && (
-                        <a
-                          href="#"
-                          className="text-muted-foreground hover:text-primary transition-colors flex items-center"
-                        >
-                          <Quote className="w-3 h-3 mr-1" />
-                          Cite
-                        </a>
-                      )}
-                    </div>
+
                   </CardContent>
                 </Card>
               ),
@@ -642,9 +616,15 @@ export default function Home() {
           </div>
 
           <div className="text-center mt-12">
-            <Button className="bg-accent hover:bg-accent/90 text-white px-8 py-3">
-              View All Publications
-            </Button>
+            <a
+              href="https://scholar.google.com/citations?user=P2w4iY4AAAAJ&hl=en"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="bg-accent hover:bg-accent/90 text-white px-8 py-3">
+                View All Publications
+              </Button>
+            </a>
           </div>
         </div>
       </section>
