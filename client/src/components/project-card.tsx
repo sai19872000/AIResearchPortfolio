@@ -65,23 +65,13 @@ export function ProjectCard({
 
   return (
     <Card className="project-card overflow-hidden">
-      <div className={`h-48 bg-gradient-to-br ${getGradientColors(type)} relative`}>
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-full object-cover mix-blend-overlay"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <div className="absolute bottom-4 left-4">
-          <Badge className={`${getTypeColor(type)} backdrop-blur-sm`}>
+      <CardContent className="p-6">
+        <div className="flex justify-between items-start mb-3">
+          <h3 className="text-xl font-bold text-primary">{title}</h3>
+          <Badge className={`${getTypeColor(type)} ml-2`}>
             {type}
           </Badge>
         </div>
-      </div>
-      <CardContent className="p-6">
-        <h3 className="text-xl font-bold text-primary mb-3">{title}</h3>
         <p className="text-muted-foreground mb-4 leading-relaxed">
           {description}
         </p>

@@ -550,7 +550,9 @@ export default function Home() {
                 description={project.description}
                 technologies={project.technologies}
                 type={project.type}
-                imageUrl={getProjectImage(project.type)}
+                codeUrl={project.codeUrl}
+                liveUrl={project.liveUrl}
+                paperUrl={project.paperUrl}
                 isProprietary={project.title.includes("Fraud Detection")}
               />
             ))}
