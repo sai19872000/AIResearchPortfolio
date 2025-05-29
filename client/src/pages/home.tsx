@@ -71,24 +71,29 @@ export default function Home() {
     );
   }
 
-  const data = portfolioData || {};
+  const data = portfolioData || {
+    personal: {},
+    experience: [],
+    projects: [],
+    publications: []
+  };
 
   return (
     <div className="min-h-screen">
       {/* Navigation */}
-      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-border">
+      <nav className="fixed top-0 w-full nav-floating backdrop-blur-md z-50 border-b border-border transition-all duration-300">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div className="text-xl font-bold text-primary">
-              Sai Teja Pusuluri
+            <div className="text-xl font-bold text-primary animate-pulse-slow">
+              <span className="gradient-text">Sai Teja Pusuluri</span>
             </div>
-            <div className="hidden md:flex space-x-8">
+            <div className="hidden md:flex space-x-2">
               {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
-                  className={`nav-link text-foreground hover:text-accent transition-colors ${
-                    activeSection === item.toLowerCase() ? "text-accent" : ""
+                  className={`nav-link text-foreground transition-all duration-300 ${
+                    activeSection === item.toLowerCase() ? "active" : ""
                   }`}
                 >
                   {item}
@@ -98,7 +103,7 @@ export default function Home() {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className={`md:hidden hamburger ${isMenuOpen ? "open" : ""} hover:bg-accent/10 transition-all duration-300`}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <Menu className="h-5 w-5" />
@@ -106,15 +111,19 @@ export default function Home() {
           </div>
           
           {isMenuOpen && (
-            <div className="md:hidden mt-4 pb-4 border-t border-border">
-              <div className="flex flex-col space-y-2 pt-4">
-                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+            <div className="md:hidden mt-6 mobile-menu">
+              <div className="flex flex-col p-2">
+                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item, index) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
-                    className="text-left py-2 hover:text-accent transition-colors"
+                    className="mobile-menu-item text-left font-medium"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    {item}
+                    <span className="flex items-center">
+                      <span className="w-2 h-2 bg-accent rounded-full mr-3 opacity-60"></span>
+                      {item}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -134,7 +143,7 @@ export default function Home() {
                 <span className="block text-accent">Expert</span>
               </h1>
               <p className="text-xl mb-8 text-gray-300 leading-relaxed">
-                {data.personal?.overview || "PhD in Physics with 8+ years of industry experience in Generative AI, Agentic AI Workflows, and MLOps. Leading innovation in AI solutions that transform organizations."}
+                {(data as any).personal?.overview || "PhD in Physics with 8+ years of industry experience in Generative AI, Agentic AI Workflows, and MLOps. Leading innovation in AI solutions that transform organizations."}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button
@@ -225,7 +234,7 @@ export default function Home() {
           </div>
 
           <div className="space-y-8">
-            {data.experience?.map((exp: any, index: number) => (
+            {(data as any).experience?.map((exp: any, index: number) => (
               <Card key={index} className="p-8 hover:border-accent transition-colors">
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
@@ -259,7 +268,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {data.projects?.map((project: any, index: number) => (
+            {(data as any).projects?.map((project: any, index: number) => (
               <ProjectCard
                 key={index}
                 title={project.title}
@@ -283,7 +292,7 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {data.publications?.map((publication: any, index: number) => (
+            {(data as any).publications?.map((publication: any, index: number) => (
               <Card key={index} className="p-6 hover:border-accent transition-colors">
                 <CardContent className="p-0">
                   <div className="flex items-start justify-between mb-4">
