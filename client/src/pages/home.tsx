@@ -38,7 +38,14 @@ export default function Home() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = ["home", "about", "experience", "projects", "publications", "contact"];
+      const sections = [
+        "home",
+        "about",
+        "experience",
+        "projects",
+        "publications",
+        "contact",
+      ];
       const currentSection = sections.find((section) => {
         const element = document.getElementById(section);
         if (element) {
@@ -47,7 +54,7 @@ export default function Home() {
         }
         return false;
       });
-      
+
       if (currentSection) {
         setActiveSection(currentSection);
       }
@@ -84,7 +91,7 @@ export default function Home() {
     personal: {},
     experience: [],
     projects: [],
-    publications: []
+    publications: [],
   };
 
   return (
@@ -94,10 +101,17 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="text-xl font-bold text-primary animate-pulse-slow">
-              <span className="gradient-text">Sai Teja Pusuluri</span>
+              <span className="gradient-text">Dr. Sai Teja Pusuluri</span>
             </div>
             <div className="hidden md:flex space-x-2">
-              {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+              {[
+                "Home",
+                "About",
+                "Experience",
+                "Projects",
+                "Publications",
+                "Contact",
+              ].map((item) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
@@ -118,11 +132,18 @@ export default function Home() {
               <Menu className="h-5 w-5" />
             </Button>
           </div>
-          
+
           {isMenuOpen && (
             <div className="md:hidden mt-6 mobile-menu">
               <div className="flex flex-col p-2">
-                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item, index) => (
+                {[
+                  "Home",
+                  "About",
+                  "Experience",
+                  "Projects",
+                  "Publications",
+                  "Contact",
+                ].map((item, index) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
@@ -142,7 +163,10 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section id="home" className="neural-bg min-h-screen flex items-center text-white relative">
+      <section
+        id="home"
+        className="neural-bg min-h-screen flex items-center text-white relative"
+      >
         <NeuralBackground />
         <div className="max-w-6xl mx-auto px-6 py-24 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -152,7 +176,8 @@ export default function Home() {
                 <span className="block text-accent">Expert</span>
               </h1>
               <p className="text-xl mb-8 text-gray-300 leading-relaxed">
-                {(data as any).personal?.overview || "PhD in Physics with 8+ years of industry experience in Generative AI, Agentic AI Workflows, and MLOps. Leading innovation in AI solutions that transform organizations."}
+                {(data as any).personal?.overview ||
+                  "PhD in Physics with 8+ years of industry experience in Generative AI, Agentic AI Workflows, and MLOps. Leading innovation in AI solutions that transform organizations."}
               </p>
               <div className="flex flex-wrap gap-4">
                 <Button
@@ -163,20 +188,29 @@ export default function Home() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="border-white text-white hover:bg-white hover:text-primary px-8 py-3"
+                  className="border-white text-white hover:bg-white hover:text-primary px-8 py-3 bg-transparent"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Download Resume
                 </Button>
               </div>
               <div className="flex space-x-6 mt-8">
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <a
+                  href="#"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   <Linkedin className="w-6 h-6" />
                 </a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
+                <a
+                  href="#"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   <Github className="w-6 h-6" />
                 </a>
-                <a href="mailto:sai19872000@gmail.com" className="text-gray-300 hover:text-white transition-colors">
+                <a
+                  href="mailto:sai19872000@gmail.com"
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
                   <Mail className="w-6 h-6" />
                 </a>
               </div>
@@ -198,10 +232,11 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">About Me</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Passionate about pushing the boundaries of artificial intelligence and machine learning
+              Passionate about pushing the boundaries of artificial intelligence
+              and machine learning
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <img
@@ -211,16 +246,21 @@ export default function Home() {
               />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-primary mb-6">Professional Journey</h3>
+              <h3 className="text-2xl font-bold text-primary mb-6">
+                Professional Journey
+              </h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                With a PhD in Physics and Neural Networks from Ohio University, I've dedicated my career to advancing 
-                the field of artificial intelligence. Currently serving as Manager/Lead - Generative AI at Discover, 
-                I pioneer agentic AI workflows and lead cross-functional teams to deliver scalable AI solutions.
+                With a PhD in Physics and Neural Networks from Ohio University,
+                I've dedicated my career to advancing the field of artificial
+                intelligence. Currently serving as Manager/Lead - Generative AI
+                at Discover, I pioneer agentic AI workflows and lead
+                cross-functional teams to deliver scalable AI solutions.
               </p>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                My experience spans from fraud detection at JP Morgan Chase to cutting-edge research in organoid 
-                segmentation at Ohio University. I'm passionate about translating complex AI research into 
-                production-ready solutions that create real business value.
+                My experience spans from fraud detection at JP Morgan Chase to
+                cutting-edge research in organoid segmentation at Ohio
+                University. I'm passionate about translating complex AI research
+                into production-ready solutions that create real business value.
               </p>
 
               <div className="space-y-6">
@@ -238,28 +278,43 @@ export default function Home() {
       <section id="experience" className="py-24 bg-muted/30">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Professional Experience</h2>
-            <p className="text-xl text-muted-foreground">Building AI solutions that transform industries</p>
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              Professional Experience
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Building AI solutions that transform industries
+            </p>
           </div>
 
           <div className="space-y-8">
             {(data as any).experience?.map((exp: any, index: number) => (
-              <Card key={index} className="p-8 hover:border-accent transition-colors">
+              <Card
+                key={index}
+                className="p-8 hover:border-accent transition-colors"
+              >
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
                     <div>
-                      <h3 className="text-2xl font-bold text-primary mb-2">{exp.title}</h3>
-                      <p className="text-accent font-medium text-lg">{exp.company}</p>
+                      <h3 className="text-2xl font-bold text-primary mb-2">
+                        {exp.title}
+                      </h3>
+                      <p className="text-accent font-medium text-lg">
+                        {exp.company}
+                      </p>
                     </div>
-                    <div className="text-muted-foreground font-medium">{exp.period}</div>
+                    <div className="text-muted-foreground font-medium">
+                      {exp.period}
+                    </div>
                   </div>
                   <ul className="space-y-3 text-muted-foreground">
-                    {exp.achievements?.map((achievement: string, achievementIndex: number) => (
-                      <li key={achievementIndex} className="flex items-start">
-                        <CheckCircle className="text-accent mr-3 mt-1 flex-shrink-0 w-4 h-4" />
-                        <span>{achievement}</span>
-                      </li>
-                    ))}
+                    {exp.achievements?.map(
+                      (achievement: string, achievementIndex: number) => (
+                        <li key={achievementIndex} className="flex items-start">
+                          <CheckCircle className="text-accent mr-3 mt-1 flex-shrink-0 w-4 h-4" />
+                          <span>{achievement}</span>
+                        </li>
+                      ),
+                    )}
                   </ul>
                 </CardContent>
               </Card>
@@ -272,8 +327,12 @@ export default function Home() {
       <section id="projects" className="py-24 bg-background">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Featured Projects</h2>
-            <p className="text-xl text-muted-foreground">Innovative AI solutions and research applications</p>
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              Featured Projects
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Innovative AI solutions and research applications
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -296,56 +355,81 @@ export default function Home() {
       <section id="publications" className="py-24 bg-muted/30">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Publications & Research</h2>
-            <p className="text-xl text-muted-foreground">Contributing to the advancement of AI and scientific research</p>
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              Publications & Research
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Contributing to the advancement of AI and scientific research
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {(data as any).publications?.map((publication: any, index: number) => (
-              <Card key={index} className="p-6 hover:border-accent transition-colors">
-                <CardContent className="p-0">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-primary mb-2">
-                        {publication.title}
-                      </h3>
-                      <p className="text-muted-foreground text-sm mb-2">
-                        {publication.authors}, {publication.journal}
-                      </p>
+            {(data as any).publications?.map(
+              (publication: any, index: number) => (
+                <Card
+                  key={index}
+                  className="p-6 hover:border-accent transition-colors"
+                >
+                  <CardContent className="p-0">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-primary mb-2">
+                          {publication.title}
+                        </h3>
+                        <p className="text-muted-foreground text-sm mb-2">
+                          {publication.authors}, {publication.journal}
+                        </p>
+                      </div>
+                      <div className="ml-4">
+                        <Badge
+                          variant={
+                            publication.status === "published"
+                              ? "default"
+                              : "secondary"
+                          }
+                          className={
+                            publication.status === "published"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-accent/10 text-accent"
+                          }
+                        >
+                          {publication.status === "published"
+                            ? "Published"
+                            : "Pending"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="ml-4">
-                      <Badge 
-                        variant={publication.status === "published" ? "default" : "secondary"}
-                        className={publication.status === "published" ? "bg-green-100 text-green-700" : "bg-accent/10 text-accent"}
+                    <div className="flex space-x-4 text-sm">
+                      <a
+                        href="#"
+                        className="text-accent hover:text-primary transition-colors flex items-center"
                       >
-                        {publication.status === "published" ? "Published" : "Pending"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex space-x-4 text-sm">
-                    <a href="#" className="text-accent hover:text-primary transition-colors flex items-center">
-                      {publication.status === "published" ? (
-                        <>
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          View Paper
-                        </>
-                      ) : (
-                        <>
-                          <ExternalLink className="w-3 h-3 mr-1" />
-                          Preprint
-                        </>
-                      )}
-                    </a>
-                    {publication.status === "published" && (
-                      <a href="#" className="text-muted-foreground hover:text-primary transition-colors flex items-center">
-                        <Quote className="w-3 h-3 mr-1" />
-                        Cite
+                        {publication.status === "published" ? (
+                          <>
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            View Paper
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="w-3 h-3 mr-1" />
+                            Preprint
+                          </>
+                        )}
                       </a>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      {publication.status === "published" && (
+                        <a
+                          href="#"
+                          className="text-muted-foreground hover:text-primary transition-colors flex items-center"
+                        >
+                          <Quote className="w-3 h-3 mr-1" />
+                          Cite
+                        </a>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ),
+            )}
           </div>
 
           <div className="text-center mt-12">
@@ -360,8 +444,12 @@ export default function Home() {
       <section className="py-24 bg-background">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">Skills & Technologies</h2>
-            <p className="text-xl text-muted-foreground">Cutting-edge tools and frameworks for AI innovation</p>
+            <h2 className="text-4xl font-bold text-primary mb-4">
+              Skills & Technologies
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Cutting-edge tools and frameworks for AI innovation
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -369,39 +457,71 @@ export default function Home() {
               {
                 icon: Brain,
                 title: "Agentic AI",
-                skills: ["LangGraph, CrewAI", "MCP Servers", "Agentic Tools", "Multi-Agent Systems"],
+                skills: [
+                  "LangGraph, CrewAI",
+                  "MCP Servers",
+                  "Agentic Tools",
+                  "Multi-Agent Systems",
+                ],
               },
               {
                 icon: Bot,
                 title: "Generative AI",
-                skills: ["OpenAI, Claude, Gemini", "Llama, Mistral", "LoRA, QLoRA", "RAG, Chain-of-Thought"],
+                skills: [
+                  "OpenAI, Claude, Gemini",
+                  "Llama, Mistral",
+                  "LoRA, QLoRA",
+                  "RAG, Chain-of-Thought",
+                ],
               },
               {
                 icon: Settings,
                 title: "MLOps",
-                skills: ["Docker, AWS SageMaker", "CI-CD Pipelines", "VLLM, APIs", "Model Monitoring"],
+                skills: [
+                  "Docker, AWS SageMaker",
+                  "CI-CD Pipelines",
+                  "VLLM, APIs",
+                  "Model Monitoring",
+                ],
               },
               {
                 icon: Code,
                 title: "Programming",
-                skills: ["Python, SQL, Bash", "TensorFlow, PyTorch", "Keras, Scikit-learn", "Git, Jupyter"],
+                skills: [
+                  "Python, SQL, Bash",
+                  "TensorFlow, PyTorch",
+                  "Keras, Scikit-learn",
+                  "Git, Jupyter",
+                ],
               },
               {
                 icon: Eye,
                 title: "Computer Vision",
-                skills: ["CNNs, YOLO", "Image Segmentation", "Object Detection", "Medical Imaging"],
+                skills: [
+                  "CNNs, YOLO",
+                  "Image Segmentation",
+                  "Object Detection",
+                  "Medical Imaging",
+                ],
               },
               {
                 icon: Users,
                 title: "Leadership",
-                skills: ["Team Management", "Mentoring", "Cross-functional Collaboration", "Stakeholder Engagement"],
+                skills: [
+                  "Team Management",
+                  "Mentoring",
+                  "Cross-functional Collaboration",
+                  "Stakeholder Engagement",
+                ],
               },
             ].map((skillGroup, index) => (
               <div key={index} className="text-center">
                 <div className="bg-accent/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                   <skillGroup.icon className="text-accent text-2xl w-8 h-8" />
                 </div>
-                <h3 className="text-xl font-bold text-primary mb-4">{skillGroup.title}</h3>
+                <h3 className="text-xl font-bold text-primary mb-4">
+                  {skillGroup.title}
+                </h3>
                 <div className="space-y-2 text-muted-foreground">
                   {skillGroup.skills.map((skill, skillIndex) => (
                     <p key={skillIndex}>{skill}</p>
@@ -418,7 +538,9 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
-            <p className="text-xl text-gray-300">Let's discuss how AI can transform your organization</p>
+            <p className="text-xl text-gray-300">
+              Let's discuss how AI can transform your organization
+            </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12">
@@ -427,13 +549,19 @@ export default function Home() {
               <div className="space-y-4">
                 <div className="flex items-center">
                   <Mail className="text-accent mr-4 w-5 h-5" />
-                  <a href="mailto:sai19872000@gmail.com" className="hover:text-accent transition-colors">
+                  <a
+                    href="mailto:sai19872000@gmail.com"
+                    className="hover:text-accent transition-colors"
+                  >
                     sai19872000@gmail.com
                   </a>
                 </div>
                 <div className="flex items-center">
                   <Phone className="text-accent mr-4 w-5 h-5" />
-                  <a href="tel:+17408186309" className="hover:text-accent transition-colors">
+                  <a
+                    href="tel:+17408186309"
+                    className="hover:text-accent transition-colors"
+                  >
                     (+1) 740-818-6309
                   </a>
                 </div>
@@ -450,7 +578,9 @@ export default function Home() {
               </div>
 
               <div className="mt-8">
-                <h4 className="text-lg font-semibold mb-4">Areas of Expertise</h4>
+                <h4 className="text-lg font-semibold mb-4">
+                  Areas of Expertise
+                </h4>
                 <ul className="space-y-2 text-gray-300">
                   <li>• Generative AI Strategy & Implementation</li>
                   <li>• Agentic AI Workflows</li>
@@ -473,26 +603,46 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">Sai Teja Pusuluri</h3>
+              <h3 className="text-xl font-bold text-white mb-4">
+                Sai Teja Pusuluri
+              </h3>
               <p className="text-gray-400 mb-4">
-                Generative AI Expert passionate about transforming organizations through innovative AI solutions.
+                Generative AI Expert passionate about transforming organizations
+                through innovative AI solutions.
               </p>
               <div className="flex space-x-4">
-                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-accent transition-colors"
+                >
                   <Linkedin className="w-5 h-5" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-accent transition-colors">
+                <a
+                  href="#"
+                  className="text-gray-400 hover:text-accent transition-colors"
+                >
                   <Github className="w-5 h-5" />
                 </a>
-                <a href="mailto:sai19872000@gmail.com" className="text-gray-400 hover:text-accent transition-colors">
+                <a
+                  href="mailto:sai19872000@gmail.com"
+                  className="text-gray-400 hover:text-accent transition-colors"
+                >
                   <Mail className="w-5 h-5" />
                 </a>
               </div>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-white mb-4">Quick Links</h4>
+              <h4 className="text-lg font-semibold text-white mb-4">
+                Quick Links
+              </h4>
               <ul className="space-y-2">
-                {["About", "Experience", "Projects", "Publications", "Contact"].map((item) => (
+                {[
+                  "About",
+                  "Experience",
+                  "Projects",
+                  "Publications",
+                  "Contact",
+                ].map((item) => (
                   <li key={item}>
                     <button
                       onClick={() => scrollToSection(item.toLowerCase())}
@@ -505,7 +655,9 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-white mb-4">Recent Focus</h4>
+              <h4 className="text-lg font-semibold text-white mb-4">
+                Recent Focus
+              </h4>
               <ul className="space-y-2 text-gray-400">
                 <li>Agentic AI Workflows</li>
                 <li>LLM Fine-tuning</li>
@@ -542,12 +694,19 @@ export default function Home() {
         >
           <Menu className="w-5 h-5" />
         </Button>
-        
+
         {isMenuOpen && (
           <div className="absolute bottom-16 left-0 mb-4 animate-slide-up">
             <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-border">
               <div className="flex flex-col space-y-2">
-                {["Home", "About", "Experience", "Projects", "Publications", "Contact"].map((item, index) => (
+                {[
+                  "Home",
+                  "About",
+                  "Experience",
+                  "Projects",
+                  "Publications",
+                  "Contact",
+                ].map((item, index) => (
                   <button
                     key={item}
                     onClick={() => scrollToSection(item.toLowerCase())}
