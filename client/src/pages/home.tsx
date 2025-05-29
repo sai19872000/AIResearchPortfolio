@@ -101,7 +101,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="text-xl font-bold text-primary animate-pulse-slow">
-              <span className="gradient-text">Dr. Sai Teja Pusuluri</span>
+              <span className="gradient-text">Sai Teja Pusuluri</span>
             </div>
             <div className="hidden md:flex space-x-2">
               {[
@@ -264,20 +264,28 @@ export default function Home() {
               </p>
             </div>
           </div>
-          
+
           {/* Career Timeline - Full Width Below */}
           <div className="mt-16">
-            <h4 className="text-2xl font-bold text-primary mb-8 text-center">Career Timeline</h4>
+            <h4 className="text-2xl font-bold text-primary mb-8 text-center">
+              Career Timeline
+            </h4>
             <div className="relative max-w-4xl mx-auto">
               <div className="space-y-16 py-8">
                 {/* Current Role - Top Right */}
                 <div className="flex justify-end">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="text-right">
-                      <div className="text-sm font-bold text-accent mb-1">2022 - Present</div>
-                      <h5 className="font-semibold text-primary">Manager/Lead - Generative AI</h5>
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2022 - Present
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Manager/Lead - Generative AI
+                      </h5>
                       <p className="text-sm text-muted-foreground">Discover</p>
-                      <p className="text-xs text-muted-foreground">Agentic AI, LLM Fine-tuning, Team Leadership</p>
+                      <p className="text-xs text-muted-foreground">
+                        Agentic AI, LLM Fine-tuning, Team Leadership
+                      </p>
                     </div>
                     <div className="relative">
                       <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow">
@@ -297,10 +305,18 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-sm font-bold text-accent mb-1">2023 - Present</div>
-                      <h5 className="font-semibold text-primary">Adjunct Professor</h5>
-                      <p className="text-sm text-muted-foreground">Ohio University</p>
-                      <p className="text-xs text-muted-foreground">Computer Vision, Organoid Research</p>
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2023 - Present
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Adjunct Professor
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Ohio University
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Computer Vision, Organoid Research
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -309,10 +325,18 @@ export default function Home() {
                 <div className="flex justify-end">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="text-right">
-                      <div className="text-sm font-bold text-accent mb-1">2017 - 2022</div>
-                      <h5 className="font-semibold text-primary">Senior Applied AI Associate</h5>
-                      <p className="text-sm text-muted-foreground">JP Morgan Chase</p>
-                      <p className="text-xs text-muted-foreground">Fraud Detection, Neural Networks, NLP</p>
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2017 - 2022
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Senior Applied AI Associate
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        JP Morgan Chase
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Fraud Detection, Neural Networks, NLP
+                      </p>
                     </div>
                     <div className="relative">
                       <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
@@ -331,10 +355,18 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="text-left">
-                      <div className="text-sm font-bold text-accent mb-1">2016 - 2017</div>
-                      <h5 className="font-semibold text-primary">Data Scientist</h5>
-                      <p className="text-sm text-muted-foreground">Nationwide Children's Hospital</p>
-                      <p className="text-xs text-muted-foreground">Bioinformatics, Medical ML</p>
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2016 - 2017
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Data Scientist
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Nationwide Children's Hospital
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Bioinformatics, Medical ML
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -343,10 +375,18 @@ export default function Home() {
                 <div className="flex justify-end">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="text-right">
-                      <div className="text-sm font-bold text-accent mb-1">2011 - 2017</div>
-                      <h5 className="font-semibold text-primary">PhD in Physics</h5>
-                      <p className="text-sm text-muted-foreground">Ohio University</p>
-                      <p className="text-xs text-muted-foreground">Neural Networks, Research, Publications</p>
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2011 - 2017
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        PhD in Physics
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Ohio University
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Neural Networks, Research, Publications
+                      </p>
                     </div>
                     <div className="relative">
                       <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
@@ -362,7 +402,10 @@ export default function Home() {
       </section>
 
       {/* Experience Section */}
-      <section id="experience" className="py-24 neural-bg relative overflow-hidden text-white">
+      <section
+        id="experience"
+        className="py-24 neural-bg relative overflow-hidden text-white"
+      >
         <NeuralBackground />
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
@@ -412,7 +455,10 @@ export default function Home() {
       </section>
 
       {/* Projects Section */}
-      <section id="projects" className="py-24 neural-bg relative overflow-hidden text-white">
+      <section
+        id="projects"
+        className="py-24 neural-bg relative overflow-hidden text-white"
+      >
         <NeuralBackground />
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
@@ -623,7 +669,10 @@ export default function Home() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-24 neural-bg relative overflow-hidden text-white">
+      <section
+        id="contact"
+        className="py-24 neural-bg relative overflow-hidden text-white"
+      >
         <NeuralBackground />
         <div className="max-w-4xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
