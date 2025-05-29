@@ -201,17 +201,13 @@ export default function Home() {
               </div>
               <div className="flex space-x-6 mt-8">
                 <a
-                  href={(data as any).personal?.LinkedInUrl || "https://www.linkedin.com/in/sai-teja-pusuluri/"}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Linkedin className="w-6 h-6" />
                 </a>
                 <a
-                  href={(data as any).personal?.GitHubUrl || "https://github.com/sai19872000"}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Github className="w-6 h-6" />
@@ -749,7 +745,7 @@ export default function Home() {
                     href={`tel:${(data as any).personal?.phone?.replace(/\s/g, "") || "+17408186309"}`}
                     className="hover:text-accent transition-colors"
                   >
-                    {(data as any).personal?.phone || "(+1) 740-818-6309"}
+                    {(data as any).personal?.phone || "740-818-6309"}
                   </a>
                 </div>
                 <div className="flex items-center">
@@ -761,8 +757,24 @@ export default function Home() {
                 </div>
                 <div className="flex items-center">
                   <Linkedin className="text-accent mr-4 w-5 h-5" />
-                  <a href="#" className="hover:text-accent transition-colors">
-                    {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
+                  <a 
+                    href={(data as any).personal?.LinkedInUrl || "https://www.linkedin.com/in/sai-teja-pusuluri/"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-accent transition-colors"
+                  >
+                    LinkedIn Profile
+                  </a>
+                </div>
+                <div className="flex items-center">
+                  <Github className="text-accent mr-4 w-5 h-5" />
+                  <a 
+                    href={(data as any).personal?.GitHubUrl || "https://github.com/sai19872000"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-accent transition-colors"
+                  >
+                    GitHub Profile
                   </a>
                 </div>
               </div>
@@ -814,7 +826,7 @@ export default function Home() {
                   <Github className="w-5 h-5" />
                 </a>
                 <a
-                  href="mailto:sai19872000@gmail.com"
+                  href={`mailto:${(data as any).personal?.email || "sai19872000@gmail.com"}`}
                   className="text-gray-400 hover:text-accent transition-colors"
                 >
                   <Mail className="w-5 h-5" />
