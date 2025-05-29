@@ -86,7 +86,7 @@
         "Pioneered agentic AI workflows, automating customer experience and operational processes and generating comprehensive model documentation via LLM pipelines, resulting in a 75% reduction in manual effort",
         "Fine-tuned LLMs for company-specific datasets: applied LoRA, QLoRA, and quantization techniques to enhance local inference throughput by 40% and reduce GPU memory usage by 25%",
         "Implemented VLLM-based inference optimization, boosting custom LLM throughput by 50% and slashing latency for production endpoints",
-        "Mentor and Lead a team of 5 direct and 10 indirect reports, cultivating talent and ensuring delivery of high-impact AI solutions",
+        "Mentor and Lead a team of several direct and indirect reports, cultivating talent and ensuring delivery of high-impact AI solutions",
         "Designed and maintained robust MLOps pipelines with CI-CD, monitoring, and custom API endpoints"
       ]
     },
