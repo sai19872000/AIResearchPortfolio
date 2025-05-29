@@ -236,21 +236,16 @@ export default function Home() {
             </div>
             <div className="hidden md:block animate-float relative">
               <video
-                key="intro-video"
-                src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`}
+                src="/attached_assets/AI_Expert_Intro_Video.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
-                controls={false}
+                preload="metadata"
                 className="rounded-2xl shadow-2xl w-full h-auto max-w-lg"
-                style={{ display: "block" }}
-                onError={(e) => console.error("Video failed to load:", e)}
-                onLoadStart={() => console.log("Video loading started")}
-                onCanPlay={() => console.log("Video can play")}
               >
                 <source
-                  src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`}
+                  src="/attached_assets/AI_Expert_Intro_Video.mp4"
                   type="video/mp4"
                 />
                 Your browser does not support the video tag.
@@ -277,21 +272,16 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-start">
             <div className="order-2 md:order-1 relative">
               <video
-                key="galactic-journey-video"
-                src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`}
+                src="/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
-                controls={false}
+                preload="metadata"
                 className="rounded-xl shadow-lg w-full h-auto object-cover aspect-square"
-                style={{ display: "block" }}
-                onError={(e) =>
-                  console.error("Galactic video failed to load:", e)
-                }
               >
                 <source
-                  src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`}
+                  src="/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4"
                   type="video/mp4"
                 />
                 Your browser does not support the video tag.
