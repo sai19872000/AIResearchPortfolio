@@ -79,6 +79,14 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const scrollToExperience = (company: string) => {
+    const elementId = `experience-${company.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const element = document.getElementById(elementId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -332,7 +340,11 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="relative">
-                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow">
+                      <div 
+                        className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => scrollToExperience('Discover')}
+                        title="View Discover experience"
+                      >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent/30 rounded-full animate-ping"></div>
@@ -344,7 +356,11 @@ export default function Home() {
                 <div className="flex justify-start">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="relative">
-                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                      <div 
+                        className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => scrollToExperience('Ohio University')}
+                        title="View Ohio University experience"
+                      >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
@@ -465,6 +481,7 @@ export default function Home() {
             {(data as any).experience?.map((exp: any, index: number) => (
               <Card
                 key={index}
+                id={`experience-${exp.company.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                 className="p-8 hover:border-accent transition-colors bg-white/10 backdrop-blur-md border-white/20"
               >
                 <CardContent className="p-0">
