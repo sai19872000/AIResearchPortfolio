@@ -101,7 +101,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
             <div className="text-xl font-bold text-primary animate-pulse-slow">
-              <span className="gradient-text">Sai Teja Pusuluri</span>
+              <span className="gradient-text">{(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}</span>
             </div>
             <div className="hidden md:flex space-x-2">
               {[
@@ -172,8 +172,8 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="animate-slide-up">
               <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-                Generative AI
-                <span className="block text-accent">Expert</span>
+                {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
+                <span className="block text-accent">{(data as any).personal?.title || "Generative AI Expert"}</span>
               </h1>
               <p className="text-xl mb-8 text-gray-300 leading-relaxed">
                 {(data as any).personal?.overview ||
@@ -690,29 +690,29 @@ export default function Home() {
                 <div className="flex items-center">
                   <Mail className="text-accent mr-4 w-5 h-5" />
                   <a
-                    href="mailto:sai19872000@gmail.com"
+                    href={`mailto:${(data as any).personal?.email || "sai19872000@gmail.com"}`}
                     className="hover:text-accent transition-colors"
                   >
-                    sai19872000@gmail.com
+                    {(data as any).personal?.email || "sai19872000@gmail.com"}
                   </a>
                 </div>
                 <div className="flex items-center">
                   <Phone className="text-accent mr-4 w-5 h-5" />
                   <a
-                    href="tel:+17408186309"
+                    href={`tel:${(data as any).personal?.phone?.replace(/\s/g, '') || "+17408186309"}`}
                     className="hover:text-accent transition-colors"
                   >
-                    (+1) 740-818-6309
+                    {(data as any).personal?.phone || "(+1) 740-818-6309"}
                   </a>
                 </div>
                 <div className="flex items-center">
                   <MapPin className="text-accent mr-4 w-5 h-5" />
-                  <span>Lewis Center, Ohio, USA</span>
+                  <span>{(data as any).personal?.location || "Lewis Center, Ohio, USA"}</span>
                 </div>
                 <div className="flex items-center">
                   <Linkedin className="text-accent mr-4 w-5 h-5" />
                   <a href="#" className="hover:text-accent transition-colors">
-                    Sai Teja Pusuluri
+                    {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
                   </a>
                 </div>
               </div>
@@ -744,11 +744,10 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-8">
             <div>
               <h3 className="text-xl font-bold text-white mb-4">
-                Sai Teja Pusuluri
+                {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}
               </h3>
               <p className="text-gray-400 mb-4">
-                Generative AI Expert passionate about transforming organizations
-                through innovative AI solutions.
+                {(data as any).personal?.bio || "Generative AI Expert passionate about transforming organizations through innovative AI solutions."}
               </p>
               <div className="flex space-x-4">
                 <a
@@ -807,7 +806,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500">
-            <p>&copy; 2025 Sai Teja Pusuluri. All rights reserved.</p>
+            <p>&copy; 2025 {(data as any).personal?.name || "Dr. Sai Teja Pusuluri"}. All rights reserved.</p>
           </div>
         </div>
       </footer>
