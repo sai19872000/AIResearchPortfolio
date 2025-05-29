@@ -399,7 +399,11 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="relative">
-                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                      <div 
+                        className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => scrollToExperience('JP Morgan Chase')}
+                        title="View JP Morgan Chase experience"
+                      >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
@@ -410,7 +414,11 @@ export default function Home() {
                 <div className="flex justify-start">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="relative">
-                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                      <div 
+                        className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
+                        onClick={() => scrollToExperience('Nationwide Children\'s Hospital')}
+                        title="View Nationwide Children's Hospital experience"
+                      >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
                       </div>
                     </div>
