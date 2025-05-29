@@ -5,22 +5,35 @@ import { insertContactMessageSchema } from "@shared/schema";
 import { z } from "zod";
 import fs from "fs";
 import path from "path";
+import { sendContactEmail } from "./email";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Contact form submission endpoint
   app.post("/api/contact", async (req, res) => {
     try {
       const validatedData = insertContactMessageSchema.parse(req.body);
-      const message = await storage.createContactMessage(validatedData);
       
-      // In a real application, you would send an email here
-      // For now, we'll just store the message and return success
-      console.log(`New contact message from ${message.email}: ${message.subject}`);
-      
-      res.json({ 
-        success: true, 
-        message: "Thank you for your message! I will get back to you soon." 
+      // Send email using SendGrid
+      const emailSent = await sendContactEmail({
+        name: validatedData.name,
+        email: validatedData.email,
+        subject: validatedData.subject,
+        message: validatedData.message
       });
+      
+      if (emailSent) {
+        console.log(`Contact email sent successfully from ${validatedData.email}`);
+        res.json({ 
+          success: true, 
+          message: "Thank you for your message! I will get back to you soon." 
+        });
+      } else {
+        console.error("Failed to send contact email");
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to send message. Please try again." 
+        });
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
