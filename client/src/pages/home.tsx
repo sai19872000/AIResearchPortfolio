@@ -266,23 +266,7 @@ export default function Home() {
               <div className="mt-8">
                 <h4 className="text-lg font-semibold text-primary mb-8">Career Timeline</h4>
                 <div className="relative max-w-2xl mx-auto">
-                  {/* S-Curve Timeline */}
-                  <svg
-                    className="absolute inset-0 w-full h-full"
-                    viewBox="0 0 400 500"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M50 50 Q200 50 200 150 Q200 250 350 250 Q200 250 200 350 Q200 450 50 450"
-                      stroke="hsl(var(--accent))"
-                      strokeWidth="2"
-                      fill="none"
-                      className="animate-pulse"
-                    />
-                  </svg>
-
-                  <div className="relative z-10 space-y-16 py-8">
+                  <div className="space-y-16 py-8">
                     {/* Current Role - Top Right */}
                     <div className="flex justify-end">
                       <div className="timeline-item flex items-center space-x-4 max-w-xs">
