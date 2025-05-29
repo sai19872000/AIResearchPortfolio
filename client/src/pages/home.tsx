@@ -264,49 +264,103 @@ export default function Home() {
               </p>
 
               <div className="mt-8">
-                <h4 className="text-lg font-semibold text-primary mb-6">Career Timeline</h4>
-                <div className="relative">
-                  {/* Timeline line */}
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-accent"></div>
-                  
-                  {/* Timeline items */}
-                  <div className="space-y-6">
-                    <div className="flex items-start">
-                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="font-semibold text-primary">Manager/Lead - Generative AI</h5>
-                          <span className="text-sm text-accent font-medium">2022 - Present</span>
+                <h4 className="text-lg font-semibold text-primary mb-8">Career Timeline</h4>
+                <div className="relative overflow-x-auto pb-4">
+                  {/* Horizontal Timeline */}
+                  <div className="flex items-center space-x-8 min-w-max px-4">
+                    {/* Timeline Item 1 */}
+                    <div className="flex flex-col items-center min-w-[200px] timeline-item">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-4 animate-pulse-slow">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
                         </div>
-                        <p className="text-sm text-muted-foreground">Discover • Agentic AI, LLM Fine-tuning, Team Leadership</p>
+                        <div className="absolute -top-2 -right-2 w-6 h-6 bg-accent/20 rounded-full animate-ping"></div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-accent mb-1">2022 - Present</div>
+                        <h5 className="font-semibold text-primary text-sm mb-1">Manager/Lead</h5>
+                        <p className="text-xs text-muted-foreground mb-1">Discover</p>
+                        <p className="text-xs text-muted-foreground">Agentic AI, LLM Fine-tuning</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-start">
-                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="font-semibold text-primary">Senior Applied AI Associate</h5>
-                          <span className="text-sm text-accent font-medium">2017 - 2022</span>
+
+                    {/* Connection Line */}
+                    <div className="flex-1 h-0.5 bg-accent relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent/50 animate-pulse"></div>
+                    </div>
+
+                    {/* Timeline Item 2 */}
+                    <div className="flex flex-col items-center min-w-[200px] timeline-item">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-4">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
                         </div>
-                        <p className="text-sm text-muted-foreground">JP Morgan Chase • Fraud Detection, Neural Networks, NLP</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-accent mb-1">2023 - Present</div>
+                        <h5 className="font-semibold text-primary text-sm mb-1">Adjunct Professor</h5>
+                        <p className="text-xs text-muted-foreground mb-1">Ohio University</p>
+                        <p className="text-xs text-muted-foreground">Computer Vision, Research</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-start">
-                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                        <div className="w-3 h-3 bg-white rounded-full"></div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h5 className="font-semibold text-primary">PhD in Physics (Neural Networks)</h5>
-                          <span className="text-sm text-accent font-medium">2011 - 2017</span>
+
+                    {/* Connection Line */}
+                    <div className="flex-1 h-0.5 bg-accent relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent/50 animate-pulse"></div>
+                    </div>
+
+                    {/* Timeline Item 3 */}
+                    <div className="flex flex-col items-center min-w-[200px] timeline-item">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-4">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
                         </div>
-                        <p className="text-sm text-muted-foreground">Ohio University • Research, Publications, Deep Learning</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-accent mb-1">2017 - 2022</div>
+                        <h5 className="font-semibold text-primary text-sm mb-1">Senior Applied AI</h5>
+                        <p className="text-xs text-muted-foreground mb-1">JP Morgan Chase</p>
+                        <p className="text-xs text-muted-foreground">Fraud Detection, NLP</p>
+                      </div>
+                    </div>
+
+                    {/* Connection Line */}
+                    <div className="flex-1 h-0.5 bg-accent relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent/50 animate-pulse"></div>
+                    </div>
+
+                    {/* Timeline Item 4 */}
+                    <div className="flex flex-col items-center min-w-[200px] timeline-item">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-4">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-accent mb-1">2016 - 2017</div>
+                        <h5 className="font-semibold text-primary text-sm mb-1">Data Scientist</h5>
+                        <p className="text-xs text-muted-foreground mb-1">Nationwide Children's</p>
+                        <p className="text-xs text-muted-foreground">Bioinformatics, ML</p>
+                      </div>
+                    </div>
+
+                    {/* Connection Line */}
+                    <div className="flex-1 h-0.5 bg-accent relative">
+                      <div className="absolute inset-0 bg-gradient-to-r from-accent to-accent/50 animate-pulse"></div>
+                    </div>
+
+                    {/* Timeline Item 5 */}
+                    <div className="flex flex-col items-center min-w-[200px] timeline-item">
+                      <div className="relative">
+                        <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-4">
+                          <div className="w-4 h-4 bg-white rounded-full"></div>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-accent mb-1">2011 - 2017</div>
+                        <h5 className="font-semibold text-primary text-sm mb-1">PhD Physics</h5>
+                        <p className="text-xs text-muted-foreground mb-1">Ohio University</p>
+                        <p className="text-xs text-muted-foreground">Neural Networks, Research</p>
                       </div>
                     </div>
                   </div>

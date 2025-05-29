@@ -275,3 +275,16 @@
 .animate-slide-down {
   animation: slideDown 0.3s ease-out;
 }
+
+.timeline-item {
+  transition: all 0.3s ease;
+}
+
+.timeline-item:hover {
+  transform: translateY(-5px);
+}
+
+.timeline-item:hover .w-12 {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(49, 130, 206, 0.3);
+}
