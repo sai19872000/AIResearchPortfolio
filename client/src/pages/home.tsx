@@ -822,47 +822,7 @@ export default function Home() {
         </button>
       )}
 
-      {/* Floating Navigation Menu for Mobile */}
-      <div className="fixed bottom-8 left-8 md:hidden z-50">
-        <Button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={`bg-primary hover:bg-primary/90 text-white p-4 rounded-full shadow-lg transition-all duration-300 ${
-            isMenuOpen ? "rotate-45" : ""
-          }`}
-          aria-label="Toggle navigation menu"
-        >
-          <Menu className="w-5 h-5" />
-        </Button>
 
-        {isMenuOpen && (
-          <div className="absolute bottom-16 left-0 mb-4 animate-slide-up">
-            <div className="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-border">
-              <div className="flex flex-col space-y-2">
-                {[
-                  "Home",
-                  "About",
-                  "Experience",
-                  "Projects",
-                  "Publications",
-                  "Contact",
-                ].map((item, index) => (
-                  <button
-                    key={item}
-                    onClick={() => scrollToSection(item.toLowerCase())}
-                    className="mobile-menu-item text-left font-medium text-sm px-4 py-3 rounded-xl"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <span className="flex items-center">
-                      <span className="w-2 h-2 bg-accent rounded-full mr-3 opacity-60"></span>
-                      {item}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }
