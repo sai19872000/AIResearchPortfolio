@@ -263,11 +263,23 @@ export default function Home() {
                 into production-ready solutions that create real business value.
               </p>
 
-              <div className="space-y-6">
-                <SkillBar skill="Generative AI" percentage={95} />
-                <SkillBar skill="MLOps & Production" percentage={90} />
-                <SkillBar skill="Team Leadership" percentage={88} />
-                <SkillBar skill="Research & Publications" percentage={92} />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-accent rounded-full"></div>
+                  <span className="font-medium">8+ Years Experience</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-accent rounded-full"></div>
+                  <span className="font-medium">15+ Team Members Led</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-accent rounded-full"></div>
+                  <span className="font-medium">10+ Publications</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-3 h-3 bg-accent rounded-full"></div>
+                  <span className="font-medium">PhD in Physics</span>
+                </div>
               </div>
             </div>
           </div>
