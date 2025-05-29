@@ -223,7 +223,7 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div className="hidden md:block animate-float">
+            <div className="hidden md:block animate-float relative">
               <video
                 key="intro-video"
                 src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`}
@@ -241,6 +241,9 @@ export default function Home() {
                 <source src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
+              <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full">
+                Generated using AI
+              </div>
             </div>
           </div>
         </div>
