@@ -1,6 +1,6 @@
 {
   "personal": {
-    "name": "Sai Teja Pusuluri",
+    "name": "Dr. Sai Teja Pusuluri",
     "title": "Generative AI Expert",
     "subtitle": "Building the future of intelligent systems",
     "bio": "PhD in Physics with over 8 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
@@ -63,10 +63,43 @@
     ]
   },
   "skills": {
-    "agenticAI": ["Agentic Tools", "MCP servers", "LangGraph", "CrewAI", "Multi-Agent Systems"],
-    "generativeAI": ["Transformer models", "Gemini", "Claude", "OpenAI", "Llama", "Mistral", "RAG", "Chain-of-Thought"],
-    "mlops": ["Docker", "AWS SageMaker", "Amazon ECR", "CI-CD", "APIs", "VLLMs", "Python", "TensorFlow", "PyTorch", "Keras", "SQL", "Bash"],
-    "leadership": ["Team Management", "Mentoring", "Cross-functional Collaboration", "Stakeholder Engagement"]
+    "agenticAI": [
+      "Agentic Tools",
+      "MCP servers",
+      "LangGraph",
+      "CrewAI",
+      "Multi-Agent Systems"
+    ],
+    "generativeAI": [
+      "Transformer models",
+      "Gemini",
+      "Claude",
+      "OpenAI",
+      "Llama",
+      "Mistral",
+      "RAG",
+      "Chain-of-Thought"
+    ],
+    "mlops": [
+      "Docker",
+      "AWS SageMaker",
+      "Amazon ECR",
+      "CI-CD",
+      "APIs",
+      "VLLMs",
+      "Python",
+      "TensorFlow",
+      "PyTorch",
+      "Keras",
+      "SQL",
+      "Bash"
+    ],
+    "leadership": [
+      "Team Management",
+      "Mentoring",
+      "Cross-functional Collaboration",
+      "Stakeholder Engagement"
+    ]
   },
   "experience": [
     {
@@ -110,28 +143,24 @@
       "description": "Engineered an agentic AI flow with UI that ingests manuscript sections, autonomously searches academic databases and the web, and generates formatted citations, streamlining literature reviews.",
       "technologies": ["Agentic AI", "NLP", "Web Scraping"],
       "period": "Jan. 2025 - Present",
-      "type": "AI Tool"
+      "type": "AI Tool",
+      "codeUrl": "https://github.com/saiteja-pusuluri/ai-citation-builder"
     },
     {
       "title": "Smart Latex Editor",
       "description": "Engineered an agentic AI flow with UI that takes custom instructions from users and makes edits to LaTeX files. Implemented smart edit and generate capabilities with equation conversion.",
       "technologies": ["LaTeX", "AI Editor", "Code Generation"],
       "period": "Jan. 2025 - Present",
-      "type": "Editor"
+      "type": "Editor",
+      "codeUrl": "https://github.com/saiteja-pusuluri/smart-latex-editor"
     },
     {
       "title": "Organoid Segmentation",
       "description": "Advanced computer vision methods for automated morphological analysis of brain organoids, contributing to cutting-edge biological research.",
       "technologies": ["Computer Vision", "Biology", "Research"],
       "period": "2023 - Present",
-      "type": "Research"
-    },
-    {
-      "title": "Fraud Detection System",
-      "description": "Advanced AI/ML models for fraud detection at JP Morgan Chase, significantly enhancing the bank's ability to identify and mitigate fraudulent activities.",
-      "technologies": ["Deep Learning", "Security", "FinTech"],
-      "period": "2017 - 2022",
-      "type": "FinTech"
+      "type": "Research",
+      "codeUrl": "https://github.com/saiteja-pusuluri/organoid-segmentation"
     }
   ],
   "publications": [
