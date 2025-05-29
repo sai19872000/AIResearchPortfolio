@@ -5,13 +5,10 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
-  connections: number[];
 }
 
 export function NeuralBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const animationIdRef = useRef<number>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -20,28 +17,27 @@ export function NeuralBackground() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let animationId: number;
+    let particles: Particle[] = [];
+
     const resizeCanvas = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      canvas.width = canvas.offsetWidth || 1920;
+      canvas.height = canvas.offsetHeight || 1080;
+      
+      // Reinitialize particles when canvas resizes
+      const particleCount = Math.min(30, Math.floor((canvas.width * canvas.height) / 15000));
+      particles = Array.from({ length: particleCount }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+      }));
     };
 
-    resizeCanvas();
-    window.addEventListener("resize", resizeCanvas);
-
-    // Initialize particles
-    const particleCount = 50;
-    particlesRef.current = Array.from({ length: particleCount }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
-      connections: [],
-    }));
-
     const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!canvas.width || !canvas.height) return;
       
-      const particles = particlesRef.current;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       
       // Update particle positions
       particles.forEach((particle) => {
@@ -56,8 +52,8 @@ export function NeuralBackground() {
       });
 
       // Draw connections
-      ctx.strokeStyle = "rgba(49, 130, 206, 0.3)";
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "rgba(49, 130, 206, 0.2)";
+      ctx.lineWidth = 1;
       
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -65,17 +61,9 @@ export function NeuralBackground() {
           const dy = particles[i].y - particles[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 120) {
-            const opacity = (120 - distance) / 120 * 0.6;
-            const gradient = ctx.createLinearGradient(
-              particles[i].x, particles[i].y,
-              particles[j].x, particles[j].y
-            );
-            gradient.addColorStop(0, `rgba(49, 130, 206, ${opacity})`);
-            gradient.addColorStop(0.5, `rgba(59, 130, 246, ${opacity * 1.2})`);
-            gradient.addColorStop(1, `rgba(49, 130, 206, ${opacity})`);
-            
-            ctx.strokeStyle = gradient;
+          if (distance < 100) {
+            const opacity = (100 - distance) / 100 * 0.4;
+            ctx.strokeStyle = `rgba(49, 130, 206, ${opacity})`;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -84,38 +72,25 @@ export function NeuralBackground() {
         }
       }
 
-      // Draw particles with glow effect
+      // Draw particles
       particles.forEach((particle) => {
-        // Outer glow
-        const gradient = ctx.createRadialGradient(
-          particle.x, particle.y, 0,
-          particle.x, particle.y, 8
-        );
-        gradient.addColorStop(0, "rgba(49, 130, 206, 0.8)");
-        gradient.addColorStop(0.4, "rgba(59, 130, 246, 0.4)");
-        gradient.addColorStop(1, "rgba(49, 130, 206, 0)");
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, 8, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Inner bright core
-        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        ctx.fillStyle = "rgba(49, 130, 206, 0.6)";
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      animationIdRef.current = requestAnimationFrame(animate);
+      animationId = requestAnimationFrame(animate);
     };
 
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
     animate();
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
+      if (animationId) {
+        cancelAnimationFrame(animationId);
       }
     };
   }, []);
@@ -123,7 +98,7 @@ export function NeuralBackground() {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
+      className="absolute inset-0 w-full h-full opacity-80"
       style={{ zIndex: 1 }}
     />
   );
