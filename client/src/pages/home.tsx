@@ -362,13 +362,14 @@ export default function Home() {
       </section>
 
       {/* Experience Section */}
-      <section id="experience" className="py-24 bg-muted/30">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="experience" className="py-24 neural-bg relative overflow-hidden text-white">
+        <NeuralBackground />
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4">
               Professional Experience
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-gray-300">
               Building AI solutions that transform industries
             </p>
           </div>
@@ -377,23 +378,23 @@ export default function Home() {
             {(data as any).experience?.map((exp: any, index: number) => (
               <Card
                 key={index}
-                className="p-8 hover:border-accent transition-colors"
+                className="p-8 hover:border-accent transition-colors bg-white/10 backdrop-blur-md border-white/20"
               >
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
                     <div>
-                      <h3 className="text-2xl font-bold text-primary mb-2">
+                      <h3 className="text-2xl font-bold text-white mb-2">
                         {exp.title}
                       </h3>
                       <p className="text-accent font-medium text-lg">
                         {exp.company}
                       </p>
                     </div>
-                    <div className="text-muted-foreground font-medium">
+                    <div className="text-gray-300 font-medium">
                       {exp.period}
                     </div>
                   </div>
-                  <ul className="space-y-3 text-muted-foreground">
+                  <ul className="space-y-3 text-gray-300">
                     {exp.achievements?.map(
                       (achievement: string, achievementIndex: number) => (
                         <li key={achievementIndex} className="flex items-start">
@@ -411,13 +412,14 @@ export default function Home() {
       </section>
 
       {/* Projects Section */}
-      <section id="projects" className="py-24 bg-background">
-        <div className="max-w-6xl mx-auto px-6">
+      <section id="projects" className="py-24 neural-bg relative overflow-hidden text-white">
+        <NeuralBackground />
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-primary mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4">
               Featured Projects
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-xl text-gray-300">
               Innovative AI solutions and research applications
             </p>
           </div>
@@ -621,7 +623,7 @@ export default function Home() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-24 bg-primary text-white">
+      <section id="contact" className="py-24 neural-bg relative overflow-hidden text-white">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Get In Touch</h2>
