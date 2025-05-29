@@ -233,7 +233,8 @@ export default function Home() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-primary mb-4">About Me</h2>
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              {(data as any).personal?.bio || "PhD in Physics with over 8 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps."}
+              Passionate about pushing the boundaries of artificial intelligence
+              and machine learning
             </p>
           </div>
 
@@ -250,12 +251,17 @@ export default function Home() {
                 Professional Journey
               </h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                {(data as any).personal?.overview || (data as any).personal?.bio}
+                With a PhD in Physics and Neural Networks from Ohio University,
+                I've dedicated my career to advancing the field of artificial
+                intelligence. Currently serving as Manager/Lead - Generative AI
+                at Discover, I pioneer agentic AI workflows and lead
+                cross-functional teams to deliver scalable AI solutions.
               </p>
               <p className="text-muted-foreground mb-8 leading-relaxed">
-                With a {(data as any).education?.degree} from {(data as any).education?.institution}, 
-                I've dedicated my career to advancing the field of artificial intelligence through 
-                practical applications and research innovation.
+                My experience spans from fraud detection at JP Morgan Chase to
+                cutting-edge research in organoid segmentation at Ohio
+                University. I'm passionate about translating complex AI research
+                into production-ready solutions that create real business value.
               </p>
             </div>
           </div>
@@ -267,54 +273,129 @@ export default function Home() {
             </h4>
             <div className="relative max-w-4xl mx-auto">
               <div className="space-y-16 py-8">
-                {(data as any).experience?.map((exp: any, index: number) => (
-                  <div key={index} className={`flex ${index % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
-                    <div className="timeline-item flex items-center space-x-4 max-w-sm">
-                      {index % 2 === 0 ? (
-                        <>
-                          <div className="text-right">
-                            <div className="text-sm font-bold text-accent mb-1">
-                              {exp.period}
-                            </div>
-                            <h5 className="font-semibold text-primary">
-                              {exp.title}
-                            </h5>
-                            <p className="text-sm text-muted-foreground">{exp.company}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exp.achievements?.[0]?.substring(0, 50)}...
-                            </p>
-                          </div>
-                          <div className="relative">
-                            <div className={`w-12 h-12 bg-accent rounded-full flex items-center justify-center ${index === 0 ? 'animate-pulse-slow' : ''}`}>
-                              <div className="w-4 h-4 bg-white rounded-full"></div>
-                            </div>
-                            {index === 0 && <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent/30 rounded-full animate-ping"></div>}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="relative">
-                            <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                              <div className="w-4 h-4 bg-white rounded-full"></div>
-                            </div>
-                          </div>
-                          <div className="text-left">
-                            <div className="text-sm font-bold text-accent mb-1">
-                              {exp.period}
-                            </div>
-                            <h5 className="font-semibold text-primary">
-                              {exp.title}
-                            </h5>
-                            <p className="text-sm text-muted-foreground">{exp.company}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exp.achievements?.[0]?.substring(0, 50)}...
-                            </p>
-                          </div>
-                        </>
-                      )}
+                {/* Current Role - Top Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2022 - Present
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Manager/Lead - Generative AI
+                      </h5>
+                      <p className="text-sm text-muted-foreground">Discover</p>
+                      <p className="text-xs text-muted-foreground">
+                        Agentic AI, LLM Fine-tuning, Team Leadership
+                      </p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent/30 rounded-full animate-ping"></div>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Adjunct Professor - Top Left */}
+                <div className="flex justify-start">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2023 - Present
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Adjunct Professor
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Ohio University
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Computer Vision, Organoid Research
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* JP Morgan - Center Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2017 - 2022
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Senior Applied AI Associate
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        JP Morgan Chase
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Fraud Detection, Neural Networks, NLP
+                      </p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nationwide Children's - Center Left */}
+                <div className="flex justify-start">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2016 - 2017
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        Data Scientist
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Nationwide Children's Hospital
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Bioinformatics, Medical ML
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PhD - Bottom Right */}
+                <div className="flex justify-end">
+                  <div className="timeline-item flex items-center space-x-4 max-w-sm">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-accent mb-1">
+                        2011 - 2017
+                      </div>
+                      <h5 className="font-semibold text-primary">
+                        PhD in Physics
+                      </h5>
+                      <p className="text-sm text-muted-foreground">
+                        Ohio University
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Neural Networks, Research, Publications
+                      </p>
+                    </div>
+                    <div className="relative">
+                      <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center">
+                        <div className="w-4 h-4 bg-white rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -507,27 +588,67 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 icon: Brain,
                 title: "Agentic AI",
-                skills: (data as any).skills?.agenticAI || ["LangGraph", "CrewAI", "Multi-Agent Systems"],
+                skills: [
+                  "LangGraph, CrewAI",
+                  "MCP Servers",
+                  "Agentic Tools",
+                  "Multi-Agent Systems",
+                ],
               },
               {
                 icon: Bot,
                 title: "Generative AI",
-                skills: (data as any).skills?.generativeAI || ["OpenAI", "Claude", "Gemini"],
+                skills: [
+                  "OpenAI, Claude, Gemini",
+                  "Llama, Mistral",
+                  "LoRA, QLoRA",
+                  "RAG, Chain-of-Thought",
+                ],
               },
               {
                 icon: Settings,
                 title: "MLOps",
-                skills: (data as any).skills?.mlops || ["Docker", "AWS SageMaker", "CI-CD"],
+                skills: [
+                  "Docker, AWS SageMaker",
+                  "CI-CD Pipelines",
+                  "VLLM, APIs",
+                  "Model Monitoring",
+                ],
+              },
+              {
+                icon: Code,
+                title: "Programming",
+                skills: [
+                  "Python, SQL, Bash",
+                  "TensorFlow, PyTorch",
+                  "Keras, Scikit-learn",
+                  "Git, Jupyter",
+                ],
+              },
+              {
+                icon: Eye,
+                title: "Computer Vision",
+                skills: [
+                  "CNNs, YOLO",
+                  "Image Segmentation",
+                  "Object Detection",
+                  "Medical Imaging",
+                ],
               },
               {
                 icon: Users,
                 title: "Leadership",
-                skills: (data as any).skills?.leadership || ["Team Management", "Mentoring"],
+                skills: [
+                  "Team Management",
+                  "Mentoring",
+                  "Cross-functional Collaboration",
+                  "Stakeholder Engagement",
+                ],
               },
             ].map((skillGroup, index) => (
               <div key={index} className="text-center">
@@ -538,7 +659,7 @@ export default function Home() {
                   {skillGroup.title}
                 </h3>
                 <div className="space-y-2 text-muted-foreground">
-                  {skillGroup.skills.map((skill: string, skillIndex: number) => (
+                  {skillGroup.skills.map((skill, skillIndex) => (
                     <p key={skillIndex}>{skill}</p>
                   ))}
                 </div>
