@@ -201,13 +201,17 @@ export default function Home() {
               </div>
               <div className="flex space-x-6 mt-8">
                 <a
-                  href="#"
+                  href={(data as any).personal?.LinkedInUrl || "https://www.linkedin.com/in/sai-teja-pusuluri/"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Linkedin className="w-6 h-6" />
                 </a>
                 <a
-                  href="#"
+                  href={(data as any).personal?.GitHubUrl || "https://github.com/sai19872000"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Github className="w-6 h-6" />
@@ -233,12 +237,15 @@ export default function Home() {
                 playsInline
                 controls={false}
                 className="rounded-2xl shadow-2xl w-full h-auto max-w-lg"
-                style={{ display: 'block' }}
-                onError={(e) => console.error('Video failed to load:', e)}
-                onLoadStart={() => console.log('Video loading started')}
-                onCanPlay={() => console.log('Video can play')}
+                style={{ display: "block" }}
+                onError={(e) => console.error("Video failed to load:", e)}
+                onLoadStart={() => console.log("Video loading started")}
+                onCanPlay={() => console.log("Video can play")}
               >
-                <source src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`} type="video/mp4" />
+                <source
+                  src={`/attached_assets/AI_Expert_Intro_Video.mp4?v=${Date.now()}`}
+                  type="video/mp4"
+                />
                 Your browser does not support the video tag.
               </video>
               <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full">
@@ -271,10 +278,15 @@ export default function Home() {
                 playsInline
                 controls={false}
                 className="rounded-xl shadow-lg w-full h-auto object-cover aspect-square"
-                style={{ display: 'block' }}
-                onError={(e) => console.error('Galactic video failed to load:', e)}
+                style={{ display: "block" }}
+                onError={(e) =>
+                  console.error("Galactic video failed to load:", e)
+                }
               >
-                <source src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`} type="video/mp4" />
+                <source
+                  src={`/attached_assets/Star_s_Galactic_Journey_Video_Ready.mp4?v=${Date.now()}`}
+                  type="video/mp4"
+                />
                 Your browser does not support the video tag.
               </video>
               <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm text-white text-sm px-3 py-1 rounded-full">

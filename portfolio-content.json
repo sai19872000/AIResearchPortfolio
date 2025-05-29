@@ -8,7 +8,9 @@
     "phone": "+1 740-818-6309",
     "location": "Lewis Center, Ohio, USA",
     "overview": "PhD in Physics with over 8 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
-    "resumeUrl": "/api/resume"
+    "resumeUrl": "/api/resume",
+    "LinkedInUrl": "https://www.linkedin.com/in/sai-teja-pusuluri/",
+    "GitHubUrl": "https://github.com/sai19872000"
   },
   "education": {
     "degree": "Ph.D. Physics (Neural networks)",
@@ -130,10 +132,23 @@
       "company": "Ohio University",
       "period": "Nov. 2023 - Present",
       "achievements": [
-        "Researched and taught advanced computer vision and segmentation methods for organoids",
-        "Developed agentic AI research workflows, automating dataset curation and model retraining",
-        "Deployed reproducible research environments using Docker, AWS SageMaker, and ECR",
-        "Developed a tri-agent fallback system, boosting YOLO-like detection recall"
+        "Researched and taught advanced computer vision and segmentation methods for organoids, contributing to cutting-edge academic publications.",
+        "Developed agentic AI research workflows, automating dataset curation and model retraining for organoid segmentation studies.",
+        "Deployed reproducible research environments using Docker, AWS SageMaker, and ECR, enabling seamless collaboration and scalability.",
+        "Developed a tri-agent fallback system, boosting YOLO-like detection recall and robustness in complex scenarios.",
+        "Mentored PhD candidates, guiding their research on deep learning applications in biology."
+      ]
+    },
+    {
+      "title": "Data Scientist",
+      "company": "Nationwide Children's Hospital",
+      "period": "Jun. 2016 - Apr. 2017",
+      "achievements": [
+        "Developed deep learning bioinformatics tools for real-time analysis of infant sensor data, enabling early detection of physiological anomalies.",
+        "Designed and implemented waveform analysis algorithms to identify feeding disorders in neonatal patients using ML-driven pattern recognition.",
+        "Applied fast Fourier transform and statistical methods to extract actionable clinical insights from biosensor signals.",
+        "Collaborated with pediatric research teams to translate analytical findings into improved care protocols and treatment strategies.",
+        "Documented analytical workflows and presented results in internal reviews, fostering adoption of AI-driven monitoring solutions."
       ]
     }
   ],
@@ -144,7 +159,7 @@
       "technologies": ["Agentic AI", "NLP", "Web Scraping"],
       "period": "Jan. 2025 - Present",
       "type": "AI Tool",
-      "codeUrl": "https://github.com/saiteja-pusuluri/ai-citation-builder"
+      "codeUrl": "https://github.com/sai19872000/literature-review-agent-app.git"
     },
     {
       "title": "Smart Latex Editor",
