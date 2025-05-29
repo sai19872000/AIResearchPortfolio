@@ -263,22 +263,53 @@ export default function Home() {
                 into production-ready solutions that create real business value.
               </p>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-accent rounded-full"></div>
-                  <span className="font-medium">8+ Years Experience</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-accent rounded-full"></div>
-                  <span className="font-medium">15+ Team Members Led</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-accent rounded-full"></div>
-                  <span className="font-medium">10+ Publications</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-accent rounded-full"></div>
-                  <span className="font-medium">PhD in Physics</span>
+              <div className="mt-8">
+                <h4 className="text-lg font-semibold text-primary mb-6">Career Timeline</h4>
+                <div className="relative">
+                  {/* Timeline line */}
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-accent"></div>
+                  
+                  {/* Timeline items */}
+                  <div className="space-y-6">
+                    <div className="flex items-start">
+                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h5 className="font-semibold text-primary">Manager/Lead - Generative AI</h5>
+                          <span className="text-sm text-accent font-medium">2022 - Present</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Discover • Agentic AI, LLM Fine-tuning, Team Leadership</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start">
+                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h5 className="font-semibold text-primary">Senior Applied AI Associate</h5>
+                          <span className="text-sm text-accent font-medium">2017 - 2022</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">JP Morgan Chase • Fraud Detection, Neural Networks, NLP</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start">
+                      <div className="relative z-10 w-8 h-8 bg-accent rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                        <div className="w-3 h-3 bg-white rounded-full"></div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <h5 className="font-semibold text-primary">PhD in Physics (Neural Networks)</h5>
+                          <span className="text-sm text-accent font-medium">2011 - 2017</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Ohio University • Research, Publications, Deep Learning</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
