@@ -56,8 +56,8 @@ export function NeuralBackground() {
       });
 
       // Draw connections
-      ctx.strokeStyle = "rgba(49, 130, 206, 0.1)";
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(49, 130, 206, 0.3)";
+      ctx.lineWidth = 1.5;
       
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
@@ -65,9 +65,17 @@ export function NeuralBackground() {
           const dy = particles[i].y - particles[j].y;
           const distance = Math.sqrt(dx * dx + dy * dy);
 
-          if (distance < 100) {
-            const opacity = (100 - distance) / 100 * 0.2;
-            ctx.strokeStyle = `rgba(49, 130, 206, ${opacity})`;
+          if (distance < 120) {
+            const opacity = (120 - distance) / 120 * 0.6;
+            const gradient = ctx.createLinearGradient(
+              particles[i].x, particles[i].y,
+              particles[j].x, particles[j].y
+            );
+            gradient.addColorStop(0, `rgba(49, 130, 206, ${opacity})`);
+            gradient.addColorStop(0.5, `rgba(59, 130, 246, ${opacity * 1.2})`);
+            gradient.addColorStop(1, `rgba(49, 130, 206, ${opacity})`);
+            
+            ctx.strokeStyle = gradient;
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
@@ -76,9 +84,24 @@ export function NeuralBackground() {
         }
       }
 
-      // Draw particles
-      ctx.fillStyle = "rgba(49, 130, 206, 0.3)";
+      // Draw particles with glow effect
       particles.forEach((particle) => {
+        // Outer glow
+        const gradient = ctx.createRadialGradient(
+          particle.x, particle.y, 0,
+          particle.x, particle.y, 8
+        );
+        gradient.addColorStop(0, "rgba(49, 130, 206, 0.8)");
+        gradient.addColorStop(0.4, "rgba(59, 130, 246, 0.4)");
+        gradient.addColorStop(1, "rgba(49, 130, 206, 0)");
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner bright core
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, 2, 0, Math.PI * 2);
         ctx.fill();
