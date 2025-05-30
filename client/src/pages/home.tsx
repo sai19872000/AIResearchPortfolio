@@ -81,7 +81,7 @@ export default function Home() {
   };
 
   const scrollToExperience = (company: string) => {
-    const elementId = `experience-${company.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+    const elementId = `experience-${company.toLowerCase().replace(/[^a-z0-9]/g, "-")}`;
     const element = document.getElementById(elementId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -212,13 +212,17 @@ export default function Home() {
               </div>
               <div className="flex space-x-6 mt-8">
                 <a
-                  href="#"
+                  href={(data as any).personal?.LinkedInUrl || "https://www.linkedin.com/in/sai-teja-pusuluri/"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Linkedin className="w-6 h-6" />
                 </a>
                 <a
-                  href="#"
+                  href={(data as any).personal?.GitHubUrl || "https://github.com/sai19872000"}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-gray-300 hover:text-white transition-colors"
                 >
                   <Github className="w-6 h-6" />
@@ -333,9 +337,9 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="relative">
-                      <div 
+                      <div
                         className="w-12 h-12 bg-accent rounded-full flex items-center justify-center animate-pulse-slow cursor-pointer hover:scale-110 transition-transform"
-                        onClick={() => scrollToExperience('Discover')}
+                        onClick={() => scrollToExperience("Discover")}
                         title="View Discover experience"
                       >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
@@ -349,9 +353,9 @@ export default function Home() {
                 <div className="flex justify-start">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="relative">
-                      <div 
+                      <div
                         className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-                        onClick={() => scrollToExperience('Ohio University')}
+                        onClick={() => scrollToExperience("Ohio University")}
                         title="View Ohio University experience"
                       >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
@@ -392,9 +396,9 @@ export default function Home() {
                       </p>
                     </div>
                     <div className="relative">
-                      <div 
+                      <div
                         className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-                        onClick={() => scrollToExperience('JP Morgan Chase')}
+                        onClick={() => scrollToExperience("JP Morgan Chase")}
                         title="View JP Morgan Chase experience"
                       >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
@@ -407,9 +411,11 @@ export default function Home() {
                 <div className="flex justify-start">
                   <div className="timeline-item flex items-center space-x-4 max-w-sm">
                     <div className="relative">
-                      <div 
+                      <div
                         className="w-12 h-12 bg-accent rounded-full flex items-center justify-center cursor-pointer hover:scale-110 transition-transform"
-                        onClick={() => scrollToExperience('Nationwide Children\'s Hospital')}
+                        onClick={() =>
+                          scrollToExperience("Nationwide Children's Hospital")
+                        }
                         title="View Nationwide Children's Hospital experience"
                       >
                         <div className="w-4 h-4 bg-white rounded-full"></div>
@@ -482,7 +488,7 @@ export default function Home() {
             {(data as any).experience?.map((exp: any, index: number) => (
               <Card
                 key={index}
-                id={`experience-${exp.company.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                id={`experience-${exp.company.toLowerCase().replace(/[^a-z0-9]/g, "-")}`}
                 className="p-8 hover:border-accent transition-colors bg-white/10 backdrop-blur-md border-white/20"
               >
                 <CardContent className="p-0">
@@ -598,7 +604,6 @@ export default function Home() {
                         </Badge>
                       </div>
                     </div>
-
                   </CardContent>
                 </Card>
               ),
@@ -757,8 +762,11 @@ export default function Home() {
                 </div>
                 <div className="flex items-center">
                   <Linkedin className="text-accent mr-4 w-5 h-5" />
-                  <a 
-                    href={(data as any).personal?.LinkedInUrl || "https://www.linkedin.com/in/sai-teja-pusuluri/"}
+                  <a
+                    href={
+                      (data as any).personal?.LinkedInUrl ||
+                      "https://www.linkedin.com/in/sai-teja-pusuluri/"
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-accent transition-colors"
@@ -768,8 +776,11 @@ export default function Home() {
                 </div>
                 <div className="flex items-center">
                   <Github className="text-accent mr-4 w-5 h-5" />
-                  <a 
-                    href={(data as any).personal?.GitHubUrl || "https://github.com/sai19872000"}
+                  <a
+                    href={
+                      (data as any).personal?.GitHubUrl ||
+                      "https://github.com/sai19872000"
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-accent transition-colors"
