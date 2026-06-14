@@ -27,6 +27,22 @@ export interface Diagram {
   caption: string | null
 }
 
+export type GenStatus = 'queued' | 'generating' | 'ready' | 'failed'
+
+export interface BlogGenRequest {
+  id: string
+  topic: string
+  angle: string | null
+  referenceUrls: string[]
+  references: { title: string | null; url: string | null; text: string }[] // from PDFs / fetched
+  options: { tone?: string; length?: string }
+  status: GenStatus
+  error: string | null
+  resultSlug: string | null
+  createdAt: string
+  updatedAt: string | null
+}
+
 export interface Reference {
   id: string
   type: string | null

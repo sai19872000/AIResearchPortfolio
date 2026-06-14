@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import { SiteNav } from "@/components/site/nav";
-import { SiteFooter } from "@/components/site/footer";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -53,9 +51,7 @@ export default function RootLayout({
     >
       <body className="auracle-ambient min-h-screen flex flex-col">
         <div className="auracle-grain" aria-hidden />
-        <SiteNav />
-        <main className="flex-1">{children}</main>
-        <SiteFooter />
+        {children}
       </body>
     </html>
   );
