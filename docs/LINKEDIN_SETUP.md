@@ -20,23 +20,30 @@ explicit human approval gate.
    `https://saiteja.ai/li/callback` (it only needs to match; you copy the code
    from the address bar — no server required).
 
-## 2. Put the app secrets in the environment  *(never in a file)*
+## 2. Store the app credentials in Secret Manager
+
+The app's client id + secret go into Secret Manager (`auracle-prod-311`), not
+your shell — durable and private. The pipeline reads them with your gcloud
+(owner) ADC. Containers `linkedin-client-id` / `linkedin-client-secret` /
+`linkedin-refresh-token` already exist.
 
 ```bash
-export LINKEDIN_CLIENT_ID=...          # from the app's Auth tab
-export LINKEDIN_CLIENT_SECRET=...
-export LINKEDIN_REDIRECT_URI=https://saiteja.ai/li/callback
+export LINKEDIN_REDIRECT_URI=https://saiteja.ai/li/callback   # not secret
+python3 scripts/linkedin_pipeline.py set-app <CLIENT_ID> <CLIENT_SECRET>
 ```
 
-## 3. Authorize once and mint a refresh token
+## 3. Authorize once — the refresh token is stored for you
 
 ```bash
 python3 scripts/linkedin_pipeline.py auth-url       # prints a URL — open it, approve
 # the browser lands on .../li/callback?code=XXXX  (page may 404 — that's fine)
-python3 scripts/linkedin_pipeline.py exchange XXXX  # prints LINKEDIN_REFRESH_TOKEN=...
-export LINKEDIN_REFRESH_TOKEN=...                   # ~365-day token; access token auto-refreshes
+python3 scripts/linkedin_pipeline.py exchange XXXX  # stores the refresh token in Secret Manager
 python3 scripts/linkedin_pipeline.py whoami         # should print urn:li:person:xxxx
 ```
+
+That's it — no tokens to copy or export. The ~365-day refresh token lives in
+Secret Manager; the access token auto-refreshes each run. (Env vars
+`LINKEDIN_CLIENT_ID` / `_SECRET` / `_REFRESH_TOKEN` still override locally if set.)
 
 ## 4. (optional) Telegram preview for approval
 

@@ -13,23 +13,31 @@ Hard rules honoured:
   * Tokens come from env vars only, never files (Hard Rule #3).
 
 Subcommands:
-  auth-url                 print the OAuth consent URL (step 1 of one-time setup)
-  exchange <code>          exchange the redirect ?code= for tokens (step 2)
+  set-app <id> <secret>    store the LinkedIn app client id + secret in Secret
+                           Manager (one-time, step 1 of setup)
+  auth-url                 print the OAuth consent URL (step 2)
+  exchange <code>          swap the redirect ?code= for tokens; stores the
+                           refresh token in Secret Manager (step 3)
   whoami                   print your member URN (verifies the token works)
   draft <slug>             show the LinkedIn copy that would be posted
   publish <slug> [--publish]
                            dry-run by default (shows draft + sends Telegram
                            preview); with --publish, actually posts.
 
-Env (see docs/LINKEDIN_SETUP.md):
-  LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET, LINKEDIN_REDIRECT_URI,
-  LINKEDIN_REFRESH_TOKEN   (minted by `exchange`)
+Credentials live in Secret Manager (auracle-prod-311), read with your gcloud
+(owner) ADC: `linkedin-client-id`, `linkedin-client-secret`,
+`linkedin-refresh-token`. The matching env vars still work as a local override.
+Other env (see docs/LINKEDIN_SETUP.md):
+  LINKEDIN_REDIRECT_URI    your app's redirect (not secret)
   SITE_BASE_URL            default https://saiteja.ai
   TG_CHAT_ID, TELEGRAM_BOT_TOKEN  (optional, for the approval preview)
 """
 from __future__ import annotations
-import argparse, json, os, sys, urllib.parse, urllib.request
+import argparse, json, os, subprocess, sys, urllib.parse, urllib.request
 from pathlib import Path
+
+# Use gcloud (owner) ADC, not a stray service-account key from another project.
+os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 API = "https://api.linkedin.com"
 OAUTH = "https://www.linkedin.com/oauth/v2"
@@ -65,11 +73,55 @@ def _env(name: str) -> str:
     return v
 
 
+def _maybe_secret(secret_name: str, env_name: str) -> str | None:
+    """Resolve a credential or return None: env override → Secret Manager."""
+    v = os.environ.get(env_name)
+    if v:
+        return v
+    try:
+        r = subprocess.run(
+            ["gcloud", "secrets", "versions", "access", "latest",
+             f"--secret={secret_name}", f"--project={FIRESTORE_PROJECT}"],
+            capture_output=True, text=True, timeout=25)
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def _secret(secret_name: str, env_name: str) -> str:
+    """Like _maybe_secret but exits with a helpful error when absent."""
+    v = _maybe_secret(secret_name, env_name)
+    if v is None:
+        sys.exit(f"missing {env_name} / Secret Manager secret '{secret_name}'. "
+                 f"Run `set-app` then `exchange` (see docs/LINKEDIN_SETUP.md).")
+    return v
+
+
+def _store_secret(secret_name: str, value: str) -> bool:
+    """Add a new version to a Secret Manager secret (creating it if needed)."""
+    subprocess.run(["gcloud", "secrets", "create", secret_name,
+                    f"--project={FIRESTORE_PROJECT}", "--replication-policy=automatic"],
+                   capture_output=True, text=True)
+    r = subprocess.run(["gcloud", "secrets", "versions", "add", secret_name,
+                        f"--project={FIRESTORE_PROJECT}", "--data-file=-"],
+                       input=value, text=True, capture_output=True)
+    return r.returncode == 0
+
+
+def cmd_set_app(a):
+    """Store the LinkedIn app's client id + secret in Secret Manager (one-time)."""
+    ok1 = _store_secret("linkedin-client-id", a.client_id)
+    ok2 = _store_secret("linkedin-client-secret", a.client_secret)
+    print("stored client id + secret in Secret Manager" if (ok1 and ok2) else "FAILED to store one or both")
+
+
 # ---- OAuth (one-time) -----------------------------------------------------
 def cmd_auth_url(_):
     params = {
         "response_type": "code",
-        "client_id": _env("LINKEDIN_CLIENT_ID"),
+        "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
         "redirect_uri": _env("LINKEDIN_REDIRECT_URI"),
         "scope": SCOPES,
     }
@@ -83,22 +135,39 @@ def cmd_exchange(a):
         "grant_type": "authorization_code",
         "code": a.code,
         "redirect_uri": _env("LINKEDIN_REDIRECT_URI"),
-        "client_id": _env("LINKEDIN_CLIENT_ID"),
-        "client_secret": _env("LINKEDIN_CLIENT_SECRET"),
+        "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
+        "client_secret": _secret("linkedin-client-secret", "LINKEDIN_CLIENT_SECRET"),
     })
-    print("access_token (≈60d):", tok.get("access_token", "")[:18], "…")
+    at = tok.get("access_token")
+    if at:
+        _store_secret("linkedin-access-token", at)
+        days = int(tok.get("expires_in", 0)) // 86400
+        print(f"access token stored in Secret Manager (valid ~{days} days)")
     rt = tok.get("refresh_token")
-    print("\nstore this (env, never a file):\n  LINKEDIN_REFRESH_TOKEN=" + (rt or "<none returned — enable refresh tokens on the app>"))
+    if rt:
+        _store_secret("linkedin-refresh-token", rt)
+        print("refresh token stored — access token will auto-refresh")
+    else:
+        print("note: LinkedIn issued no refresh token for this app — re-run "
+              "`auth-url` + `exchange` to renew when the access token expires (~60 days).")
 
 
 def _access_token() -> str:
-    tok = _http("POST", OAUTH + "/accessToken", form=True, data={
-        "grant_type": "refresh_token",
-        "refresh_token": _env("LINKEDIN_REFRESH_TOKEN"),
-        "client_id": _env("LINKEDIN_CLIENT_ID"),
-        "client_secret": _env("LINKEDIN_CLIENT_SECRET"),
-    })
-    return tok["access_token"]
+    # Prefer the refresh-token grant if LinkedIn ever issues one for this app.
+    rt = _maybe_secret("linkedin-refresh-token", "LINKEDIN_REFRESH_TOKEN")
+    if rt:
+        tok = _http("POST", OAUTH + "/accessToken", form=True, data={
+            "grant_type": "refresh_token", "refresh_token": rt,
+            "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
+            "client_secret": _secret("linkedin-client-secret", "LINKEDIN_CLIENT_SECRET"),
+        })
+        return tok["access_token"]
+    # Otherwise use the stored ~60-day access token directly.
+    at = _maybe_secret("linkedin-access-token", "LINKEDIN_ACCESS_TOKEN")
+    if at:
+        return at
+    sys.exit("no LinkedIn token — run `auth-url` + `exchange` to authorize "
+             "(LinkedIn access tokens last ~60 days; re-run when one expires).")
 
 
 def _member_urn(access: str) -> str:
@@ -185,14 +254,28 @@ def _upload_image(access: str, owner: str, image: Path) -> str:
     return asset
 
 
+def _resolve_image(hero: str | None) -> Path | None:
+    """heroImage may be a GCS URL (download it) or a local /public path."""
+    if not hero:
+        return None
+    if hero.startswith("http"):
+        try:
+            import tempfile
+            with urllib.request.urlopen(hero, timeout=30) as r:
+                data = r.read()
+            tmp = Path(tempfile.gettempdir()) / f"li-hero-{Path(hero).name}"
+            tmp.write_bytes(data)
+            return tmp
+        except Exception:
+            return None
+    p = Path(__file__).resolve().parent.parent / "public" / hero.lstrip("/")
+    return p if p.exists() else None
+
+
 def cmd_publish(a):
     post = _load_post(a.slug)
     text = build_draft(post)
-    image = None
-    if post.get("heroImage"):
-        p = Path(__file__).resolve().parent.parent / "public" / post["heroImage"].lstrip("/")
-        if p.exists():
-            image = p
+    image = _resolve_image(post.get("heroImage"))
     print("─" * 60)
     print(text)
     print("─" * 60)
@@ -238,6 +321,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    sa = sub.add_parser("set-app", help="store LinkedIn client id + secret in Secret Manager")
+    sa.add_argument("client_id"); sa.add_argument("client_secret"); sa.set_defaults(fn=cmd_set_app)
     sub.add_parser("auth-url").set_defaults(fn=cmd_auth_url)
     ex = sub.add_parser("exchange"); ex.add_argument("code"); ex.set_defaults(fn=cmd_exchange)
     sub.add_parser("whoami").set_defaults(fn=cmd_whoami)

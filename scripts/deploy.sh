@@ -24,14 +24,12 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ -f "$HOME/.auracle/secrets.env" ] && set -a && . "$HOME/.auracle/secrets.env" && set +a || true
 CF_ZONE="${CF_ZONE_ID:-${CLOUDFLARE_ZONE_ID:-}}"
 
-# Base runtime config. Admin + email secrets are passed through from the
-# environment if you've exported them (never committed). Without ADMIN_PASSWORD
-# the /admin page is simply unreachable (login always fails) — safe default.
-ENVVARS="FIRESTORE_PROJECT_ID=${PROJECT},FIRESTORE_DATABASE_ID=saiteja-site,CONTACT_TO_EMAIL=hello@saiteja.ai"
-[ -n "${ADMIN_PASSWORD:-}" ]       && ENVVARS="${ENVVARS},ADMIN_PASSWORD=${ADMIN_PASSWORD}"
-[ -n "${ADMIN_SESSION_SECRET:-}" ] && ENVVARS="${ENVVARS},ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET}"
-[ -n "${SENDGRID_API_KEY:-}" ]     && ENVVARS="${ENVVARS},SENDGRID_API_KEY=${SENDGRID_API_KEY}"
-[ -z "${ADMIN_PASSWORD:-}" ] && echo "  ⚠ ADMIN_PASSWORD not set — /admin will be locked. Export it + ADMIN_SESSION_SECRET to enable."
+# Non-secret runtime config (replaced wholesale each deploy — fine, no secrets here).
+ENVVARS="FIRESTORE_PROJECT_ID=${PROJECT},FIRESTORE_DATABASE_ID=saiteja-site,CONTACT_TO_EMAIL=hello@saiteja.ai,SAITEJA_ART_BUCKET=saiteja-blog-art"
+# Admin secrets live in Secret Manager — durable across reboots AND redeploys,
+# never in the shell or the repo. (See docs/ADMIN_SETUP.md.)
+SECRETS="ADMIN_PASSWORD=saiteja-admin-password:latest,ADMIN_SESSION_SECRET=saiteja-admin-session-secret:latest"
+[ -n "${SENDGRID_API_KEY:-}" ] && ENVVARS="${ENVVARS},SENDGRID_API_KEY=${SENDGRID_API_KEY}"
 
 echo "▶ 1/3  building + deploying '$SERVICE' from source (Cloud Build)…"
 gcloud run deploy "$SERVICE" \
@@ -39,7 +37,8 @@ gcloud run deploy "$SERVICE" \
   --project="$PROJECT" --region="$REGION" \
   --allow-unauthenticated --port=8080 --memory=512Mi \
   --min-instances=0 --max-instances=3 --quiet \
-  --set-env-vars="$ENVVARS"
+  --set-env-vars="$ENVVARS" \
+  --set-secrets="$SECRETS"
 
 echo "▶ 2/3  mapping ${FQDN} -> ${SERVICE}…"
 gcloud beta run domain-mappings create \
