@@ -20,33 +20,37 @@ from pathlib import Path
 GENIMAGE = "/home/sai/auracle/bin/genimage"
 ART_DIR = Path(__file__).resolve().parent.parent / "public" / "art"
 
-# The shared Aura brand frame injected into every prompt.
+# The shared Auracle brand frame injected into every prompt: dark, cinematic,
+# dual-energy. Warm amber (Claude/brain) + cool teal (Gemini/body) meeting at a
+# luminous seam. Sacred-geometry-meets-precision-instrument.
 BRAND = (
-    "Aura design system, 'quietly forged' — restrained, editorial, precise. "
-    "Deep navy ink background (#0A0E1A) with a faint cosmic grain. Periwinkle "
-    "(#8AB6FF) as the only accent. Cream (#F4F1EA) for any light tone. Flat, "
-    "no drop shadows, hairline aesthetic, generous negative space. Calm and "
-    "high-end, never loud, never neon, never busy. "
+    "Auracle design system — dark, cinematic, premium, precise; sacred geometry "
+    "fused with a precision instrument. Deep obsidian background (#0B0F14). Two "
+    "energies: warm amber-gold (#F2A85B) and cool teal-cyan (#46C8DD), meeting at "
+    "a single luminous warm-to-cool seam. Depth-of-field, fine particulate sparks, "
+    "thin geometric yantra line-work. One soft glow at the seam, never neon, never "
+    "busy. Editorial negative space. Absolutely no purple, no glassmorphism. "
 )
 
 PROMPTS = {
     "og": (
-        BRAND + "A 1200x630 landscape social card. A single set of three thin "
-        "concentric periwinkle rings (a quiet breathing mark) sitting left of "
-        "centre on a uniform deep-navy field with one soft periwinkle glow. "
-        "Balanced, symmetrical calm. Absolutely no text, no words, no letters."
+        BRAND + "A 1200x630 landscape social card. Two faint energy currents — one "
+        "warm amber, one cool teal — sweeping in from opposite corners to meet at a "
+        "single vertical luminous seam left of centre on a deep obsidian field. "
+        "Cinematic, calm, premium. Absolutely no text, no words, no letters."
     ),
     "hero": (
-        BRAND + "A 1600x900 abstract header image for an essay about: {concept}. "
-        "Evoke the idea through minimal geometric forms, fine line networks, or "
-        "a subtle field — not literal illustration. No text, no words, no letters."
+        BRAND + "A 1600x900 cinematic abstract header for an essay about: {concept}. "
+        "Evoke the idea through the dual-energy seam, fine line networks, and "
+        "particulate sparks flying off the cool side — not literal illustration. "
+        "No text, no words, no letters."
     ),
     "infographic": (
         BRAND + "A clean 1200x1200 infographic/diagram that shows: {concept}. "
         "Lay out real structure — labelled nodes, a small flow, or a compact "
-        "comparison — using a 4px grid, legible correctly-spelled mono labels, "
-        "thin periwinkle connectors on navy. One screen, high contrast, readable "
-        "on a phone. Diagram, not illustration."
+        "comparison — on a 4px grid with legible correctly-spelled UPPERCASE mono "
+        "labels, thin amber and teal connectors on obsidian. One screen, high "
+        "contrast, readable on a phone. Diagram, not illustration."
     ),
 }
 

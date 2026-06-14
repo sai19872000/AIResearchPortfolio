@@ -1,33 +1,41 @@
 import Link from 'next/link'
-import { AuraCredit } from '@/components/aura/aura-credit'
+import { Mark } from '@/components/auracle/mark'
 
 export function SiteFooter() {
+  const col = (head: string, items: { label: string; href: string; ext?: boolean }[]) => (
+    <div>
+      <div className="t-label" style={{ marginBottom: 14 }}>{head}</div>
+      {items.map((it) => (
+        <div key={it.label} style={{ marginBottom: 9 }}>
+          <a href={it.href} target={it.ext ? '_blank' : undefined} rel={it.ext ? 'noreferrer' : undefined}
+            style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-muted)' }}>{it.label}</a>
+        </div>
+      ))}
+    </div>
+  )
   return (
-    <footer style={{ borderTop: '1px solid var(--border)' }}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-14 md:flex-row md:items-end md:justify-between">
-        <div className="max-w-sm">
-          <p style={{ color: 'var(--fg)' }}>Sai Teja Pusuluri</p>
-          <p className="mt-2 text-sm" style={{ color: 'var(--fg-dim)' }}>
-            generative & agentic AI, built to hold up in production. lewis center, ohio.
+    <footer style={{ borderTop: '1px solid var(--line)', padding: '56px 24px 40px' }}>
+      <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.6fr_1fr_1fr]" >
+        <div>
+          <Mark size={28} withWord />
+          <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-faint)', maxWidth: 300, marginTop: 16, lineHeight: 1.6 }}>
+            Generative and agentic AI, built to hold up in production. Lewis Center, Ohio.
           </p>
         </div>
-
-        <div className="flex flex-col gap-3 text-sm">
-          <a className="link-arrow" href="https://www.linkedin.com/in/sai-teja-pusuluri/" target="_blank" rel="noreferrer">linkedin →</a>
-          <a className="link-arrow" href="https://github.com/sai19872000" target="_blank" rel="noreferrer">github →</a>
-          <a className="link-arrow" href="https://scholar.google.com/citations?user=P2w4iY4AAAAJ&hl=en" target="_blank" rel="noreferrer">scholar →</a>
-          <Link className="link-arrow" href="/blog">writing →</Link>
-        </div>
+        {col('Elsewhere', [
+          { label: 'LinkedIn', href: 'https://www.linkedin.com/in/sai-teja-pusuluri/', ext: true },
+          { label: 'GitHub', href: 'https://github.com/sai19872000', ext: true },
+          { label: 'Google Scholar', href: 'https://scholar.google.com/citations?user=P2w4iY4AAAAJ&hl=en', ext: true },
+        ])}
+        {col('Site', [
+          { label: 'Writing', href: '/blog' },
+          { label: 'Résumé', href: '/assets/resume.pdf', ext: true },
+          { label: 'Contact', href: '/#contact' },
+        ])}
       </div>
-
-      <div
-        className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6"
-        style={{ borderTop: '1px solid var(--border)' }}
-      >
-        <span className="text-xs" style={{ color: 'var(--fg-dim)' }}>
-          © {new Date().getFullYear()} Sai Teja Pusuluri
-        </span>
-        <AuraCredit />
+      <div className="mx-auto mt-10 flex max-w-6xl items-center justify-between" style={{ paddingTop: 22, borderTop: '1px solid var(--line)' }}>
+        <span className="t-label" style={{ letterSpacing: '.06em' }}>© {new Date().getFullYear()} SAI TEJA PUSULURI</span>
+        <span className="t-label" style={{ letterSpacing: '.06em' }}>FORGED IN AURACLE</span>
       </div>
     </footer>
   )

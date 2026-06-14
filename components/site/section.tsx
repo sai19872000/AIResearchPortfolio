@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Reveal } from './reveal'
 
-/** Editorial section: mono eyebrow + restrained heading, hairline top rule. */
+/** Editorial section: mono seam-tick label + Fraunces heading, hairline top rule. */
 export function Section({
   id,
   index,
@@ -22,28 +22,27 @@ export function Section({
   return (
     <section
       id={id}
-      className="mx-auto w-full max-w-5xl px-6 py-20 md:py-28 scroll-mt-24"
-      style={divider ? { borderTop: '1px solid var(--border)' } : undefined}
+      className="mx-auto w-full max-w-6xl px-6 py-20 md:py-28"
+      style={{ scrollMarginTop: 96, borderTop: divider ? '1px solid var(--line)' : undefined }}
     >
       <Reveal>
         <div className="mb-12 md:mb-16">
-          <span className="eyebrow">
-            {index} / {eyebrow}
-          </span>
+          <span className="t-label seam-tick">{index} · {eyebrow}</span>
           <h2
             className="mt-4 max-w-3xl"
             style={{
-              fontSize: 'clamp(1.6rem, 3.4vw, 2.4rem)',
-              fontWeight: 300,
-              lineHeight: 'var(--lh-h2)',
+              fontFamily: 'var(--font-display)',
+              fontSize: 'clamp(1.75rem, 3.6vw, 2.5rem)',
+              fontWeight: 600,
+              lineHeight: 1.1,
               letterSpacing: 'var(--tracking-display)',
-              color: 'var(--fg)',
+              color: 'var(--text)',
             }}
           >
             {title}
           </h2>
           {intro && (
-            <p className="mt-5 measure" style={{ color: 'var(--fg-muted)' }}>
+            <p className="mt-5 measure" style={{ color: 'var(--text-muted)', fontSize: 'var(--text-body-lg, 19px)' }}>
               {intro}
             </p>
           )}

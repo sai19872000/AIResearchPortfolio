@@ -1,30 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { ArrowRight } from '@phosphor-icons/react'
+import { ArrowRight } from 'lucide-react'
 
 type State = 'idle' | 'sending' | 'sent' | 'error'
-
-const field: React.CSSProperties = {
-  width: '100%',
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--r-md)',
-  padding: '12px 14px',
-  color: 'var(--fg)',
-  fontSize: 'var(--text-small)',
-  fontFamily: 'var(--font-primary)',
-  outline: 'none',
-  transition: 'border-color var(--duration-fast) var(--ease-standard)',
-}
-const labelStyle: React.CSSProperties = {
-  fontFamily: 'var(--font-mono)',
-  fontSize: 'var(--text-xs)',
-  letterSpacing: 'var(--tracking-mono)',
-  textTransform: 'uppercase',
-  color: 'var(--fg-dim)',
-  display: 'block',
-  marginBottom: 'var(--sp-2)',
-}
 
 export function ContactForm() {
   const [state, setState] = useState<State>('idle')
@@ -50,14 +28,11 @@ export function ContactForm() {
 
   if (state === 'sent') {
     return (
-      <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 'var(--sp-8)' }}>
-        <p style={{ color: 'var(--fg)' }}>sent — <em>i&apos;ll get back to you</em>.</p>
-        <button
-          onClick={() => setState('idle')}
-          className="link-arrow"
-          style={{ marginTop: 'var(--sp-4)', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          send another →
+      <div className="au-card au-card--accent au-card--seam" style={{ padding: 28 }}>
+        <p style={{ color: 'var(--text)', fontFamily: 'var(--font-display)', fontSize: 22 }}>Message sent.</p>
+        <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>I read everything and reply when I can.</p>
+        <button onClick={() => setState('idle')} className="link-arrow" style={{ marginTop: 16, background: 'none', border: 'none', cursor: 'pointer' }}>
+          Send another <ArrowRight size={14} />
         </button>
       </div>
     )
@@ -65,38 +40,23 @@ export function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <div>
-        <label style={labelStyle} htmlFor="name">name</label>
-        <input style={field} id="name" name="name" required autoComplete="name"
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')} />
-      </div>
-      <div>
-        <label style={labelStyle} htmlFor="email">email</label>
-        <input style={field} id="email" name="email" type="email" required autoComplete="email"
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')} />
-      </div>
-      <div>
-        <label style={labelStyle} htmlFor="message">message</label>
-        <textarea style={{ ...field, minHeight: 130, resize: 'vertical' }} id="message" name="message" required
-          placeholder="tell me about the work…"
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')} />
-      </div>
-
+      <label className="au-field">
+        <span className="au-field__label">Name</span>
+        <input className="au-input" name="name" required autoComplete="name" />
+      </label>
+      <label className="au-field">
+        <span className="au-field__label">Email</span>
+        <input className="au-input" name="email" type="email" required autoComplete="email" />
+      </label>
+      <label className="au-field">
+        <span className="au-field__label">Message</span>
+        <textarea className="au-input" name="message" required rows={5} placeholder="What are you working on?" style={{ resize: 'vertical', minHeight: 130 }} />
+      </label>
       <div className="flex items-center gap-4">
-        <button
-          type="submit"
-          disabled={state === 'sending'}
-          className="link-arrow"
-          style={{ background: 'none', border: 'none', cursor: state === 'sending' ? 'default' : 'pointer', fontSize: 'var(--text-body)', opacity: state === 'sending' ? 0.6 : 1 }}
-        >
-          {state === 'sending' ? 'sending…' : 'send message'} <ArrowRight size={15} weight="bold" />
+        <button type="submit" disabled={state === 'sending'} className="au-btn au-btn--primary" style={{ opacity: state === 'sending' ? 0.7 : 1 }}>
+          {state === 'sending' ? 'Sending…' : 'Send message'} <ArrowRight size={16} />
         </button>
-        {state === 'error' && (
-          <span className="text-sm" style={{ color: 'var(--danger)' }}>something didn&apos;t send. retry?</span>
-        )}
+        {state === 'error' && <span style={{ color: 'var(--danger)', fontSize: 14 }}>Something didn’t send. Try again?</span>}
       </div>
     </form>
   )

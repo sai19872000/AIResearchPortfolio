@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
-import { ArrowRight, ArrowDown } from '@phosphor-icons/react/dist/ssr'
-import { AuraMark } from '@/components/aura/aura-mark'
+import { ArrowRight, ArrowDown } from 'lucide-react'
 import type { Portfolio } from '@/lib/types'
 
 const d = (ms: number): CSSProperties => ({ ['--d' as string]: `${ms}ms` })
@@ -9,66 +8,62 @@ const d = (ms: number): CSSProperties => ({ ['--d' as string]: `${ms}ms` })
 export function Hero({ portfolio }: { portfolio: Portfolio }) {
   const { personal, education } = portfolio
   const stats = [
-    { k: '8+', v: 'years in industry AI' },
-    { k: 'phd', v: 'physics · neural networks' },
+    { k: '8+', v: 'years building industry AI' },
+    { k: 'PhD', v: 'physics · neural networks' },
     { k: '4', v: 'peer-reviewed papers' },
   ]
 
   return (
-    <section className="relative mx-auto flex min-h-[92vh] max-w-5xl flex-col justify-center px-6 pb-20 pt-32">
-      <div className="load-up mb-8 flex items-center gap-3" style={d(0)}>
-        <AuraMark size={20} />
-        <span className="eyebrow">generative ai · agentic systems · mlops</span>
-      </div>
-
-      <h1
-        className="load-up"
-        style={{
-          ...d(80),
-          fontSize: 'clamp(2.4rem, 6.5vw, 4.6rem)',
-          fontWeight: 300,
-          lineHeight: 'var(--lh-h1)',
-          letterSpacing: 'var(--tracking-display)',
-          color: 'var(--fg)',
-          maxWidth: '18ch',
-        }}
-      >
-        i build generative and agentic systems that hold up in production, <em>quietly forged</em>.
-      </h1>
-
-      <p className="load-up mt-8 measure" style={{ ...d(160), color: 'var(--fg-muted)' }}>
-        {personal.bio}
-      </p>
-
-      <div className="load-up mt-10 flex flex-wrap items-center gap-x-8 gap-y-4" style={d(240)}>
-        <Link className="link-arrow" href="/#contact" style={{ fontSize: 'var(--text-body)' }}>
-          get in touch <ArrowRight size={15} weight="bold" />
-        </Link>
-        <a className="link-arrow" href="/assets/resume.pdf" target="_blank" rel="noreferrer" style={{ fontSize: 'var(--text-body)' }}>
-          download cv <ArrowDown size={15} weight="bold" />
-        </a>
-        <Link className="link-arrow" href="/blog" style={{ fontSize: 'var(--text-body)' }}>
-          read the writing <ArrowRight size={15} weight="bold" />
-        </Link>
-      </div>
-
-      <dl
-        className="load-up mt-16 grid max-w-2xl grid-cols-3 gap-px"
-        style={{ ...d(320), borderTop: '1px solid var(--border)' }}
-      >
-        {stats.map((s) => (
-          <div key={s.k} className="pt-5">
-            <dt style={{ fontSize: 'clamp(1.5rem,3vw,2rem)', fontWeight: 300, color: 'var(--fg)', letterSpacing: 'var(--tracking-display)' }}>
-              {s.k}
-            </dt>
-            <dd className="mt-1 text-xs" style={{ color: 'var(--fg-dim)' }}>{s.v}</dd>
+    <section className="relative overflow-hidden" style={{ borderBottom: '1px solid var(--line)' }}>
+      <div className="mx-auto grid max-w-6xl items-stretch gap-0 px-0 md:grid-cols-[1.04fr_.96fr]">
+        {/* text column */}
+        <div className="flex min-h-[88vh] flex-col justify-center px-6 py-28 md:pl-2 md:pr-12">
+          <div className="rise" style={d(40)}>
+            <span className="t-label seam-tick">Generative AI · agentic systems · MLOps</span>
           </div>
-        ))}
-      </dl>
+          <h1
+            className="rise mt-6"
+            style={{
+              ...d(120),
+              fontFamily: 'var(--font-display)',
+              fontWeight: 600,
+              fontSize: 'clamp(2.6rem, 6vw, 4rem)',
+              lineHeight: 1.04,
+              letterSpacing: '-.025em',
+              color: 'var(--text)',
+              maxWidth: '15ch',
+            }}
+          >
+            I build AI that holds up in production.
+          </h1>
+          <p className="rise mt-7 measure" style={{ ...d(220), fontSize: 19, lineHeight: 1.55, color: 'var(--text-muted)' }}>
+            {personal.bio}
+          </p>
+          <div className="rise mt-9 flex flex-wrap items-center gap-3" style={d(320)}>
+            <Link href="/#contact" className="au-btn au-btn--primary">Get in touch <ArrowRight size={17} /></Link>
+            <a href="/assets/resume.pdf" target="_blank" rel="noreferrer" className="au-btn au-btn--secondary">Download CV <ArrowDown size={15} /></a>
+          </div>
+          <dl className="rise mt-12 grid max-w-xl grid-cols-3 gap-px" style={{ ...d(440), borderTop: '1px solid var(--line)' }}>
+            {stats.map((s) => (
+              <div key={s.k} className="pt-5">
+                <dt style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(1.6rem,3vw,2rem)', fontWeight: 600, color: 'var(--text)', letterSpacing: '-.02em' }}>{s.k}</dt>
+                <dd className="t-label" style={{ marginTop: 6, textTransform: 'none', letterSpacing: '.02em', color: 'var(--text-faint)' }}>{s.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
 
-      <span className="sr-only">
-        {personal.name}, {personal.title}. {education.degree}, {education.institution}.
-      </span>
+        {/* energy image column */}
+        <div className="relative hidden md:block" style={{ minHeight: 560 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/art/hero.png" alt="" aria-hidden
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, var(--bg) 0%, transparent 40%, transparent 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(0deg, var(--bg) 0%, transparent 24%)' }} />
+        </div>
+      </div>
+
+      <span className="sr-only">{personal.name}, {personal.title}. {education.degree}, {education.institution}.</span>
     </section>
   )
 }

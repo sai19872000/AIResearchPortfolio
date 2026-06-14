@@ -1,14 +1,13 @@
-import { ArrowUpRight, GithubLogo, FileText } from '@phosphor-icons/react/dist/ssr'
+import { ArrowUpRight, Code, FileText, Check } from 'lucide-react'
 import { getPortfolio } from '@/lib/firestore'
 import { Hero } from '@/components/site/hero'
 import { Section } from '@/components/site/section'
 import { Reveal } from '@/components/site/reveal'
 import { ContactForm } from '@/components/site/contact-form'
-import { ThemeChip } from '@/components/aura/theme-chip'
 
-// Render per-request so the container build never needs Firestore creds;
-// Cloud Run's runtime service account reads Firestore at request time.
 export const dynamic = 'force-dynamic'
+
+const ACCENTS = ['warm', 'cool', 'seam'] as const
 
 export default async function HomePage() {
   const p = await getPortfolio()
@@ -18,35 +17,35 @@ export default async function HomePage() {
       <Hero portfolio={p} />
 
       {/* ABOUT */}
-      <Section id="about" index="01" eyebrow="about" title="a physicist who ships." divider={false}>
+      <Section id="about" index="01" eyebrow="About" title="A physicist who ships." divider={false}>
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr]">
           <Reveal>
-            <div className="measure space-y-6" style={{ color: 'var(--fg-muted)' }}>
+            <div className="measure space-y-6" style={{ color: 'var(--text-muted)' }}>
               <p>
-                i started in physics — a phd at {p.education.institution.split(',')[0]}, modelling
-                neural networks and the dynamics of living systems. that work taught me to respect
-                evidence over hype, and to build things that survive contact with the real world.
+                I started in physics — a PhD at {p.education.institution.split(',')[0]}, modelling neural
+                networks and the dynamics of living systems. That work set the habit I still keep:
+                respect the evidence, and build things that survive contact with the real world.
               </p>
               <p>
-                today i lead generative and agentic AI at Discover: fine-tuning LLMs, designing
-                multi-agent workflows, and standing up the MLOps that keeps them honest in
-                production. i still teach and publish on the side, mostly computer vision for
+                Today I lead generative and agentic AI at <strong>Discover</strong> — fine-tuning LLMs,
+                designing multi-agent workflows, and standing up the MLOps that keeps them honest in
+                production. I still teach and publish on the side, mostly computer vision for
                 brain-organoid research at Ohio University.
               </p>
               <p>{p.about.description}</p>
             </div>
           </Reveal>
-          <Reveal delay={0.1}>
-            <dl className="space-y-5 text-sm">
+          <Reveal>
+            <dl className="space-y-5" style={{ fontSize: 15 }}>
               {[
-                ['based', p.personal.location],
-                ['doctorate', p.education.degree],
-                ['institution', p.education.institution],
-                ['focus', 'generative ai · agentic systems · mlops'],
+                ['Based', p.personal.location],
+                ['Doctorate', p.education.degree],
+                ['Institution', p.education.institution],
+                ['Focus', 'Generative AI · agentic systems · MLOps'],
               ].map(([k, v]) => (
-                <div key={k} style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-3)' }}>
-                  <dt className="eyebrow">{k}</dt>
-                  <dd className="mt-1" style={{ color: 'var(--fg)' }}>{v}</dd>
+                <div key={k} style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                  <dt className="t-label">{k}</dt>
+                  <dd className="mt-1" style={{ color: 'var(--text)' }}>{v}</dd>
                 </div>
               ))}
             </dl>
@@ -55,23 +54,20 @@ export default async function HomePage() {
       </Section>
 
       {/* EXPERIENCE */}
-      <Section id="experience" index="02" eyebrow="experience" title="where the work happened.">
+      <Section id="experience" index="02" eyebrow="Experience" title="Where the work happened.">
         <ol className="space-y-px">
           {p.experience.map((exp, i) => (
-            <Reveal as="li" key={exp.company} delay={Math.min(i * 0.05, 0.15)}>
-              <div
-                className="grid gap-4 py-8 md:grid-cols-[1fr_2fr]"
-                style={{ borderTop: '1px solid var(--border)' }}
-              >
+            <Reveal as="li" key={exp.company}>
+              <div className="grid gap-4 py-8 md:grid-cols-[1fr_2fr]" style={{ borderTop: '1px solid var(--line)' }}>
                 <div>
-                  <h3 style={{ fontSize: 'var(--text-h3)', fontWeight: 400, color: 'var(--fg)' }}>{exp.title}</h3>
-                  <p className="mt-1 text-sm" style={{ color: 'var(--accent)' }}>{exp.company}</p>
-                  <p className="mt-1 text-xs" style={{ color: 'var(--fg-dim)', fontFamily: 'var(--font-mono)', letterSpacing: '0.04em' }}>{exp.period}</p>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>{exp.title}</h3>
+                  <p className="mt-1" style={{ color: i % 2 ? 'var(--cool)' : 'var(--warm)', fontSize: 15 }}>{exp.company}</p>
+                  <p className="t-label mt-2" style={{ textTransform: 'none', letterSpacing: '.04em' }}>{exp.period}</p>
                 </div>
-                <ul className="space-y-3 text-sm" style={{ color: 'var(--fg-muted)' }}>
+                <ul className="space-y-3" style={{ color: 'var(--text-muted)', fontSize: 15 }}>
                   {exp.achievements.map((a, j) => (
                     <li key={j} className="flex gap-3">
-                      <span aria-hidden style={{ color: 'var(--accent)', flexShrink: 0 }}>◐</span>
+                      <Check size={16} style={{ color: i % 2 ? 'var(--cool)' : 'var(--warm)', flexShrink: 0, marginTop: 4 }} />
                       <span>{a}</span>
                     </li>
                   ))}
@@ -82,32 +78,33 @@ export default async function HomePage() {
         </ol>
       </Section>
 
-      {/* WORK / PROJECTS */}
-      <Section id="work" index="03" eyebrow="selected work" title="things i built outside the day job." intro="small, sharp tools — most of them agentic, most of them open source.">
+      {/* WORK */}
+      <Section id="work" index="03" eyebrow="Selected work" title="Things I built outside the day job." intro="Small, sharp tools — most of them agentic, most of them open source.">
         <div className="grid gap-5 md:grid-cols-3">
           {p.projects.map((proj, i) => {
             const href = proj.liveUrl || proj.codeUrl || proj.paperUrl
+            const accent = ACCENTS[i % ACCENTS.length]
             const inner = (
-              <>
-                <span className="eyebrow">{proj.type}</span>
-                <h3 style={{ fontSize: 'var(--text-h3)', fontWeight: 400, color: 'var(--fg)', lineHeight: 'var(--lh-h3)' }}>{proj.title}</h3>
-                <p className="text-sm" style={{ color: 'var(--fg-muted)', flex: 1 }}>{proj.description}</p>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12, height: '100%' }}>
+                <span className="t-label">{proj.type}</span>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 }}>{proj.title}</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: 15, flex: 1 }}>{proj.description}</p>
                 <div className="flex flex-wrap gap-2">
-                  {proj.technologies.map((t) => <ThemeChip key={t} label={t} />)}
+                  {proj.technologies.map((t) => <span key={t} className="au-chip">{t}</span>)}
                 </div>
                 {href && (
-                  <span className="link-arrow" style={{ marginTop: 'var(--sp-2)' }}>
-                    {proj.codeUrl ? <><GithubLogo size={14} /> view source</> : <>open <ArrowUpRight size={14} weight="bold" /></>}
+                  <span className="link-arrow" style={{ marginTop: 4 }}>
+                    {proj.codeUrl ? <><Code size={14} /> View source</> : <>Open <ArrowUpRight size={14} /></>}
                   </span>
                 )}
-              </>
+              </div>
             )
             return (
-              <Reveal key={proj.title} delay={Math.min(i * 0.05, 0.15)}>
+              <Reveal key={proj.title}>
                 {href ? (
-                  <a href={href} target="_blank" rel="noreferrer" className="plate h-full">{inner}</a>
+                  <a href={href} target="_blank" rel="noreferrer" className={`au-card au-card--accent au-card--${accent} h-full`}>{inner}</a>
                 ) : (
-                  <div className="plate h-full">{inner}</div>
+                  <div className={`au-card au-card--accent au-card--${accent} h-full`}>{inner}</div>
                 )}
               </Reveal>
             )
@@ -116,44 +113,39 @@ export default async function HomePage() {
       </Section>
 
       {/* PUBLICATIONS */}
-      <Section id="publications" index="04" eyebrow="research" title="peer-reviewed work." intro="from cellular reprogramming to graphene chemistry to brain-organoid maturation.">
+      <Section id="publications" index="04" eyebrow="Research" title="Peer-reviewed work." intro="From cellular reprogramming to graphene chemistry to brain-organoid maturation.">
         <ul className="space-y-px">
-          {p.publications.map((pub, i) => (
-            <Reveal as="li" key={pub.title} delay={Math.min(i * 0.04, 0.12)}>
-              <div className="flex flex-col gap-2 py-6 md:flex-row md:items-start md:justify-between" style={{ borderTop: '1px solid var(--border)' }}>
+          {p.publications.map((pub) => (
+            <Reveal as="li" key={pub.title}>
+              <div className="flex flex-col gap-2 py-6 md:flex-row md:items-start md:justify-between" style={{ borderTop: '1px solid var(--line)' }}>
                 <div className="md:max-w-3xl">
-                  <h3 style={{ fontSize: 'var(--text-body)', color: 'var(--fg)' }}>{pub.title}</h3>
-                  <p className="mt-1 text-sm" style={{ color: 'var(--fg-dim)' }}>{pub.authors} · {pub.journal}</p>
+                  <h3 style={{ color: 'var(--text)', fontSize: 17 }}>{pub.title}</h3>
+                  <p className="mt-1" style={{ color: 'var(--text-faint)', fontSize: 14 }}>{pub.authors} · {pub.journal}</p>
                 </div>
-                <span
-                  className="shrink-0 self-start text-xs"
-                  style={{
-                    fontFamily: 'var(--font-mono)', letterSpacing: 'var(--tracking-mono)', textTransform: 'uppercase',
-                    color: pub.status === 'published' ? 'var(--accent)' : 'var(--fg-dim)',
-                    border: '1px solid var(--border)', borderRadius: 'var(--r-pill)', padding: '4px 10px',
-                  }}
-                >
-                  {pub.status === 'published' ? 'published' : 'in review'}
-                </span>
+                {pub.status === 'published' ? (
+                  <span className="au-status au-status--green shrink-0"><span className="au-status__dot" />Published</span>
+                ) : (
+                  <span className="au-status shrink-0"><span className="au-status__dot" />In review</span>
+                )}
               </div>
             </Reveal>
           ))}
         </ul>
         <Reveal>
-          <a className="link-arrow mt-10 inline-flex" href="https://scholar.google.com/citations?user=P2w4iY4AAAAJ&hl=en" target="_blank" rel="noreferrer">
-            <FileText size={15} /> all publications on google scholar →
+          <a className="link-arrow" style={{ marginTop: 40, display: 'inline-flex' }} href="https://scholar.google.com/citations?user=P2w4iY4AAAAJ&hl=en" target="_blank" rel="noreferrer">
+            <FileText size={15} /> All publications on Google Scholar <ArrowUpRight size={14} />
           </a>
         </Reveal>
       </Section>
 
       {/* SKILLS */}
-      <Section id="skills" index="05" eyebrow="toolkit" title="what i reach for.">
+      <Section id="skills" index="05" eyebrow="Toolkit" title="What I reach for.">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           {Object.entries(p.skills).map(([group, items]) => (
             <Reveal key={group}>
               <div>
-                <h3 className="eyebrow" style={{ color: 'var(--fg)' }}>{group.replace(/([A-Z])/g, ' $1').toLowerCase().trim()}</h3>
-                <ul className="mt-4 space-y-2 text-sm" style={{ color: 'var(--fg-muted)' }}>
+                <h3 className="t-label" style={{ color: 'var(--text)' }}>{group.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                <ul className="mt-4 space-y-2" style={{ color: 'var(--text-muted)', fontSize: 15 }}>
                   {items.map((s) => <li key={s}>{s}</li>)}
                 </ul>
               </div>
@@ -163,30 +155,30 @@ export default async function HomePage() {
       </Section>
 
       {/* CONTACT */}
-      <Section id="contact" index="06" eyebrow="contact" title="let's talk about the work." intro="generative ai strategy, agentic workflows, production mlops, or research — reach out.">
+      <Section id="contact" index="06" eyebrow="Contact" title="Let’s talk about the work." intro="Generative AI strategy, agentic workflows, production MLOps, or research — reach out.">
         <div className="grid gap-12 md:grid-cols-2">
           <Reveal>
-            <dl className="space-y-5 text-sm">
+            <dl className="space-y-5" style={{ fontSize: 15 }}>
               {[
-                ['email', p.personal.email, `mailto:${p.personal.email}`],
-                ['linkedin', 'sai-teja-pusuluri', p.personal.LinkedInUrl],
-                ['github', 'sai19872000', p.personal.GitHubUrl],
-                ['based', p.personal.location, null],
+                ['Email', p.personal.email, `mailto:${p.personal.email}`],
+                ['LinkedIn', 'sai-teja-pusuluri', p.personal.LinkedInUrl],
+                ['GitHub', 'sai19872000', p.personal.GitHubUrl],
+                ['Based', p.personal.location, null],
               ].map(([k, v, href]) => (
-                <div key={k as string} style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-3)' }}>
-                  <dt className="eyebrow">{k}</dt>
+                <div key={k as string} style={{ borderTop: '1px solid var(--line)', paddingTop: 12 }}>
+                  <dt className="t-label">{k}</dt>
                   <dd className="mt-1">
                     {href ? (
-                      <a href={href as string} target={String(href).startsWith('http') ? '_blank' : undefined} rel="noreferrer" style={{ color: 'var(--fg)', textDecoration: 'none' }}>{v}</a>
+                      <a href={href as string} target={String(href).startsWith('http') ? '_blank' : undefined} rel="noreferrer" style={{ color: 'var(--text)' }}>{v}</a>
                     ) : (
-                      <span style={{ color: 'var(--fg)' }}>{v}</span>
+                      <span style={{ color: 'var(--text)' }}>{v}</span>
                     )}
                   </dd>
                 </div>
               ))}
             </dl>
           </Reveal>
-          <Reveal delay={0.1}>
+          <Reveal>
             <ContactForm />
           </Reveal>
         </div>
