@@ -14,11 +14,36 @@ Usage:
 Requires: /home/sai/auracle/bin/genimage on disk (the agy/Ultra renderer).
 """
 from __future__ import annotations
-import subprocess, sys
+import os, subprocess, sys
 from pathlib import Path
 
 GENIMAGE = "/home/sai/auracle/bin/genimage"
-ART_DIR = Path(__file__).resolve().parent.parent / "public" / "art"
+PUBLIC = Path(__file__).resolve().parent.parent / "public"
+ART_DIR = PUBLIC / "art"
+GCS_BUCKET = os.environ.get("SAITEJA_ART_BUCKET", "saiteja-blog-art")
+GCS_PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
+
+
+def upload_to_gcs(local: Path) -> str | None:
+    """Upload a rendered PNG to the public art bucket; return its public URL.
+    dest path mirrors the file's path under public/ (e.g. art/blog/x.png)."""
+    try:
+        from google.cloud import storage
+    except Exception:
+        return None
+    try:
+        rel = local.relative_to(PUBLIC).as_posix()
+    except ValueError:
+        rel = f"art/{local.name}"
+    try:
+        client = storage.Client(project=GCS_PROJECT)
+        blob = client.bucket(GCS_BUCKET).blob(rel)
+        blob.cache_control = "public, max-age=31536000, immutable"
+        blob.upload_from_filename(str(local), content_type="image/png")
+        return f"https://storage.googleapis.com/{GCS_BUCKET}/{rel}"
+    except Exception as e:
+        print(f"  gcs upload failed (non-fatal): {e}")
+        return None
 
 # The shared Auracle brand frame injected into every prompt: dark, cinematic,
 # dual-energy. Warm amber (Claude/brain) + cool teal (Gemini/body) meeting at a
@@ -59,7 +84,13 @@ def render(prompt: str, out: Path) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     print(f"→ rendering {out.name}")
     r = subprocess.run([GENIMAGE, prompt, str(out)], stdin=subprocess.DEVNULL)
-    print("  ok" if r.returncode == 0 and out.exists() else "  FAILED")
+    ok = r.returncode == 0 and out.exists()
+    if ok:
+        url = upload_to_gcs(out)
+        # Machine-readable line the skill / watcher captures:
+        print(f"ART_URL: {url}" if url else f"ART_LOCAL: /{out.relative_to(PUBLIC).as_posix()}")
+    else:
+        print("  FAILED")
     return r.returncode
 
 

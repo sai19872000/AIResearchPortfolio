@@ -11,21 +11,26 @@ Two halves that talk through Firestore:
 - **The watcher** (`scripts/blog_watcher.py`, runs on your factory machine) —
   picks up queued requests and writes the drafts with `claude`.
 
-## 1. Set the admin secrets (deploy)
+## 1. Admin secrets — in Secret Manager (durable)
 
-Export two secrets before deploying; they're passed to Cloud Run (never
-committed). Without `ADMIN_PASSWORD` the admin page stays locked.
+The admin password + session secret live in **Google Secret Manager**
+(`auracle-prod-311`), so they survive machine reboots AND every redeploy —
+nothing in your shell or the repo. `deploy.sh` wires them in with `--set-secrets`;
+the Cloud Run runtime SA has `secretAccessor`. Already created:
+
+- `saiteja-admin-password` — your login password.
+- `saiteja-admin-session-secret` — signs the login cookie (stable across deploys).
+
+Rotate the password anytime (takes effect on the next deploy):
 
 ```bash
-export ADMIN_PASSWORD='something-long-only-you-know'
-export ADMIN_SESSION_SECRET="$(openssl rand -hex 32)"   # set ONCE, keep stable
-# optional, for the contact form:
-export SENDGRID_API_KEY='SG....'
-scripts/deploy.sh                 # redeploys with the admin enabled
+printf 'my-new-password' | gcloud secrets versions add saiteja-admin-password \
+  --project=auracle-prod-311 --data-file=-
+scripts/deploy.sh
 ```
 
-`ADMIN_SESSION_SECRET` signs the login cookie — keep it the same across deploys
-or everyone gets logged out. Sign in at `https://<host>/admin/login`.
+Sign in at `https://<host>/admin/login`. (`SENDGRID_API_KEY`, if you set it for
+the contact form, is still passed via env at deploy time.)
 
 ## 2. Run the watcher (your machine)
 
@@ -54,12 +59,27 @@ automatically. Run it under `systemd --user` or `tmux` if you want it always on.
 4. To post it to LinkedIn: `python3 scripts/linkedin_pipeline.py publish <slug>`
    (see `LINKEDIN_SETUP.md`).
 
+## Art — the `blog-art` skill
+
+The writer makes its own visuals via the project skill at
+`.claude/skills/blog-art/SKILL.md`: one on-brand (Auracle) **hero** per post and
+**1–2 inline infographics** where a concept is clearer shown than told, rendered
+with nano-banana (`scripts/gen_art.py`) and uploaded to the public bucket
+`gs://saiteja-blog-art`. Because art lives in GCS, it shows on the live site the
+instant you publish — **no redeploy needed**.
+
+Backfill heroes for the existing posts:
+
+```bash
+python3 scripts/backfill_art.py            # posts missing a hero
+python3 scripts/backfill_art.py --force    # regenerate all
+```
+
 ## Notes / limits
 
-- **Post text is live the instant you publish.** The **hero image** is a static
-  file written to `public/art/blog/`; it appears on the deployed site after the
-  next `scripts/deploy.sh`. (If you want generated art to show instantly without
-  a redeploy, we can add a small public GCS bucket and point `heroImage` at it —
-  that needs your OK since it creates a public bucket.)
+- **Everything is live the instant you publish** — post text (runtime Firestore)
+  and art (GCS). No redeploy.
 - The writer never auto-publishes — every post is a draft until you flip it.
+- Per-post infographics for the *back-catalogue* are a heavier agentic pass;
+  regenerate a specific old post through `/admin` to add them.
 - You can also hand-write a post: `/admin/posts/new`.
