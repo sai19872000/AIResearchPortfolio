@@ -36,6 +36,9 @@ from __future__ import annotations
 import argparse, json, os, subprocess, sys, urllib.parse, urllib.request
 from pathlib import Path
 
+# Use gcloud (owner) ADC, not a stray service-account key from another project.
+os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
+
 API = "https://api.linkedin.com"
 OAUTH = "https://www.linkedin.com/oauth/v2"
 SCOPES = "openid profile w_member_social"
