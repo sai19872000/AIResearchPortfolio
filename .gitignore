@@ -21,3 +21,6 @@ next-env.d.ts
 
 # blog generation workdir
 .gen/
+
+# generated blog art (served from GCS, not bundled)
+public/art/blog/
