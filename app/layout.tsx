@@ -26,8 +26,9 @@ export const metadata: Metadata = {
     title: "Sai Teja Pusuluri — generative AI, quietly forged",
     description:
       "PhD physicist building generative and agentic AI systems that hold up in production.",
+    images: ["/art/og.png"],
   },
-  twitter: { card: "summary_large_image", creator: "@sai19872000" },
+  twitter: { card: "summary_large_image", creator: "@sai19872000", images: ["/art/og.png"] },
 };
 
 export default function RootLayout({
