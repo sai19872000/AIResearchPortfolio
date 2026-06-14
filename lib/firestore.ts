@@ -1,6 +1,6 @@
 import 'server-only'
 import { Firestore } from '@google-cloud/firestore'
-import type { BlogPost, Portfolio, Reference } from './types'
+import type { BlogPost, BlogGenRequest, Portfolio, Reference } from './types'
 
 // Pinned to the named Firestore database created for this site.
 // Auth: Application Default Credentials (Cloud Run runtime SA in prod;
@@ -71,4 +71,55 @@ export async function createContactMessage(msg: {
     ...msg,
     createdAt: new Date().toISOString(),
   })
+}
+
+// ---- admin: all posts (incl. drafts), CRUD, generation queue ----
+
+export async function listAllPosts(): Promise<BlogPost[]> {
+  const snap = await db().collection('blogPosts').get()
+  return snap.docs
+    .map((d) => d.data() as BlogPost)
+    .sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''))
+}
+
+export async function upsertPost(slug: string, data: Partial<BlogPost>): Promise<void> {
+  await db().collection('blogPosts').doc(slug).set(
+    { ...data, slug, updatedAt: new Date().toISOString() },
+    { merge: true },
+  )
+}
+
+export async function deletePost(slug: string): Promise<void> {
+  await db().collection('blogPosts').doc(slug).delete()
+}
+
+export async function createGenRequest(input: {
+  topic: string
+  angle?: string
+  referenceUrls?: string[]
+  references?: { title: string | null; url: string | null; text: string }[]
+  options?: { tone?: string; length?: string }
+}): Promise<string> {
+  const now = new Date().toISOString()
+  const ref = await db().collection('blogGenRequests').add({
+    topic: input.topic,
+    angle: input.angle || null,
+    referenceUrls: input.referenceUrls || [],
+    references: input.references || [],
+    options: input.options || {},
+    status: 'queued',
+    error: null,
+    resultSlug: null,
+    createdAt: now,
+    updatedAt: now,
+  })
+  return ref.id
+}
+
+export async function listGenRequests(limit = 20): Promise<BlogGenRequest[]> {
+  const snap = await db().collection('blogGenRequests').get()
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Omit<BlogGenRequest, 'id'>) }))
+    .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    .slice(0, limit)
 }
