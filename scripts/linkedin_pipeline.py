@@ -70,10 +70,8 @@ def _env(name: str) -> str:
     return v
 
 
-def _secret(secret_name: str, env_name: str) -> str:
-    """Resolve a credential: env override → Secret Manager (latest) → error.
-    Secrets live in Secret Manager (auracle-prod-311); read with your gcloud
-    (owner) ADC. env vars still work as an override for local testing."""
+def _maybe_secret(secret_name: str, env_name: str) -> str | None:
+    """Resolve a credential or return None: env override → Secret Manager."""
     v = os.environ.get(env_name)
     if v:
         return v
@@ -86,8 +84,16 @@ def _secret(secret_name: str, env_name: str) -> str:
             return r.stdout.strip()
     except Exception:
         pass
-    sys.exit(f"missing {env_name} / Secret Manager secret '{secret_name}'. "
-             f"Run `set-app` then `exchange` (see docs/LINKEDIN_SETUP.md).")
+    return None
+
+
+def _secret(secret_name: str, env_name: str) -> str:
+    """Like _maybe_secret but exits with a helpful error when absent."""
+    v = _maybe_secret(secret_name, env_name)
+    if v is None:
+        sys.exit(f"missing {env_name} / Secret Manager secret '{secret_name}'. "
+                 f"Run `set-app` then `exchange` (see docs/LINKEDIN_SETUP.md).")
+    return v
 
 
 def _store_secret(secret_name: str, value: str) -> bool:
@@ -129,24 +135,36 @@ def cmd_exchange(a):
         "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
         "client_secret": _secret("linkedin-client-secret", "LINKEDIN_CLIENT_SECRET"),
     })
-    print("access_token (≈60d):", tok.get("access_token", "")[:18], "…")
+    at = tok.get("access_token")
+    if at:
+        _store_secret("linkedin-access-token", at)
+        days = int(tok.get("expires_in", 0)) // 86400
+        print(f"access token stored in Secret Manager (valid ~{days} days)")
     rt = tok.get("refresh_token")
     if rt:
-        ok = _store_secret("linkedin-refresh-token", rt)
-        print("refresh token stored in Secret Manager (linkedin-refresh-token)" if ok
-              else "FAILED to store refresh token in Secret Manager")
+        _store_secret("linkedin-refresh-token", rt)
+        print("refresh token stored — access token will auto-refresh")
     else:
-        print("no refresh token returned — enable refresh tokens on the LinkedIn app")
+        print("note: LinkedIn issued no refresh token for this app — re-run "
+              "`auth-url` + `exchange` to renew when the access token expires (~60 days).")
 
 
 def _access_token() -> str:
-    tok = _http("POST", OAUTH + "/accessToken", form=True, data={
-        "grant_type": "refresh_token",
-        "refresh_token": _secret("linkedin-refresh-token", "LINKEDIN_REFRESH_TOKEN"),
-        "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
-        "client_secret": _secret("linkedin-client-secret", "LINKEDIN_CLIENT_SECRET"),
-    })
-    return tok["access_token"]
+    # Prefer the refresh-token grant if LinkedIn ever issues one for this app.
+    rt = _maybe_secret("linkedin-refresh-token", "LINKEDIN_REFRESH_TOKEN")
+    if rt:
+        tok = _http("POST", OAUTH + "/accessToken", form=True, data={
+            "grant_type": "refresh_token", "refresh_token": rt,
+            "client_id": _secret("linkedin-client-id", "LINKEDIN_CLIENT_ID"),
+            "client_secret": _secret("linkedin-client-secret", "LINKEDIN_CLIENT_SECRET"),
+        })
+        return tok["access_token"]
+    # Otherwise use the stored ~60-day access token directly.
+    at = _maybe_secret("linkedin-access-token", "LINKEDIN_ACCESS_TOKEN")
+    if at:
+        return at
+    sys.exit("no LinkedIn token — run `auth-url` + `exchange` to authorize "
+             "(LinkedIn access tokens last ~60 days; re-run when one expires).")
 
 
 def _member_urn(access: str) -> str:
