@@ -1,6 +1,20 @@
-node_modules
-dist
+# deps
+/node_modules
+# next
+/.next/
+/out/
+# production
+/build
+# misc
 .DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+*.pem
+# debug
+npm-debug.log*
+# env
+.env*
+!.env.example
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+# legacy node_modules if any
+/_legacy/node_modules

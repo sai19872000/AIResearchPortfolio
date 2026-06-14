@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+_legacy
+attached_assets
+docs
+scripts
+.claude
+*.md
+README.md
+Dockerfile
+.dockerignore
+.env*
+npm-debug.log*

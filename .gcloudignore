@@ -1,0 +1,12 @@
+# Keep the Cloud Build upload small; the image build does npm ci + next build.
+.git
+node_modules
+.next
+_legacy
+attached_assets
+docs
+scripts
+.claude
+*.md
+.env*
+npm-debug.log*
