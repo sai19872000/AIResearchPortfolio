@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+/* Bridge Aura tokens into Tailwind v4 utilities (bg-bg, text-accent, …) */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-dim: var(--fg-dim);
+  --color-accent: var(--accent);
+  --color-accent-warm: var(--accent-warm);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-primary);
+  --font-mono: var(--font-mono);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+}
+
+:root {
+  /* === COLOR · navy ink + periwinkle ===================================== */
+  --bg:              #0A0E1A;   /* aura-ink — primary background */
+  --surface:         #1B2236;   /* aura-steel — cards, surfaces */
+  --surface-raised:  #252D44;   /* aura-steel-light — hover */
+  --fg:              #F4F1EA;   /* aura-cream — primary text */
+  --fg-muted:        #C9D7E8;   /* aura-mist — secondary text */
+  --fg-dim:          #6E7B95;   /* dim chrome */
+  --accent:          #8AB6FF;   /* aura-accent — periwinkle, signature */
+  --accent-warm:     #FFB347;   /* aura-flare — warning warmth */
+  --border:          rgba(255, 255, 255, 0.08);
+  --border-strong:   rgba(255, 255, 255, 0.14);
+  --danger:          #FF6B6B;
+  --warn:            #FFB347;
+  --ok:              #8AB6FF;   /* live = accent itself */
+
+  /* === RADIUS ============================================================= */
+  --r-sm:  4px;
+  --r-md:  6px;
+  --r-lg:  8px;
+  --r-xl:  16px;
+  --r-pill: 100px;
+
+  /* === SHADOW · almost none ============================================== */
+  --shadow-sm:   0 0 0 1px var(--border);          /* a hairline, not a shadow */
+  --shadow-md:   0 0 0 1px var(--border-strong);
+  --shadow-lg:   0 0 0 1px var(--border-strong);   /* the brand does not float */
+  --shadow-glow: 0 0 8px var(--accent);            /* live-state only */
+
+  /* === OPACITY ============================================================ */
+  --opacity-disabled:  0.38;
+  --opacity-overlay:   0.72;
+  --opacity-subtle:    0.06;
+
+  /* === SPACING ============================================================ */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-24: 96px;
+
+  /* === TYPOGRAPHY ========================================================= */
+  --font-primary: var(--font-geist-sans), 'Inter', system-ui, sans-serif;
+  --font-mono:    var(--font-geist-mono), 'JetBrains Mono', 'Courier New', monospace;
+
+  --text-h1:    3rem;        /* 48px */
+  --text-h2:    1.75rem;     /* 28px */
+  --text-h3:    1.25rem;     /* 20px */
+  --text-body:  1.0625rem;   /* 17px */
+  --text-small: 0.875rem;    /* 14px */
+  --text-xs:    0.6875rem;   /* 11px · mono labels */
+
+  --lh-h1:    1.05;
+  --lh-h2:    1.2;
+  --lh-h3:    1.3;
+  --lh-body:  1.7;
+  --lh-small: 1.55;
+  --lh-xs:    1.4;
+
+  --tracking-mono:    0.15em;     /* mono labels */
+  --tracking-display: -0.025em;   /* tight display tracking */
+
+  /* === MOTION · three timings only ====================================== */
+  --duration-fast:   120ms;       /* hover, micro-affordance */
+  --duration-base:   220ms;       /* state change, panel open */
+  --duration-slow:   480ms;       /* page enter, modal */
+
+  --ease-standard:   cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-accelerate: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* === LIGHT MODE · opt-in ================================================ */
+[data-theme='light'] {
+  --bg:             #F4F1EA;
+  --surface:        #FAF8F2;
+  --surface-raised: #FFF;
+  --fg:             #0A0E1A;
+  --fg-muted:       #4A5568;
+  --fg-dim:         #94A3B8;
+  --accent:         #3A6CFF;     /* aura-accent-deep on light */
+  --border:         rgba(0, 0, 0, 0.06);
+  --border-strong:  rgba(0, 0, 0, 0.12);
+}
+
+/* === REDUCED MOTION · always wins ====================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* === BASE ================================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+  color: var(--fg);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  font-weight: 300;            /* display weight is 300, italic 200 */
+  letter-spacing: var(--tracking-display);
+}
+
+h1 em, h2 em, h3 em {
+  font-weight: 200;
+  font-style: italic;
+  color: var(--fg-muted);
+}
+
+/* === THE BREATHING RING — the single canonical animation ================= */
+@keyframes aura-breathe {
+  0%, 100% { transform: scale(0.42); opacity: 0.5; }
+  50%      { transform: scale(1);    opacity: 1;   }
+}
+
+/* === STATUS PULSE — for status-badge =================================== */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* === SELECTION · INHERITANCE HOOK #4 =================================== */
+::selection {
+  background: rgba(138, 182, 255, 0.25);
+  color: var(--accent);
+}
+
+/* === FOCUS RING ========================================================= */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* === ATMOSPHERE · a quiet field, not decoration ======================== */
+.field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 72% -8%, rgba(138, 182, 255, 0.10), transparent 60%),
+    radial-gradient(48rem 32rem at 0% 100%, rgba(138, 182, 255, 0.05), transparent 55%);
+}
+.field::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
+}
+
+/* === SHARED HELPERS ==================================================== */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-mono);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.measure { max-width: 68ch; }
+.link-arrow {
+  color: var(--accent);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-small);
+  transition: gap var(--duration-fast) var(--ease-standard),
+              opacity var(--duration-fast) var(--ease-standard);
+}
+.link-arrow:hover { gap: calc(var(--sp-2) + 4px); opacity: 0.85; }
+
+/* === PROSE · blog markdown ============================================= */
+.prose { color: var(--fg-muted); font-size: var(--text-body); line-height: var(--lh-body); }
+.prose > * + * { margin-top: var(--sp-6); }
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  color: var(--fg); font-weight: 300; letter-spacing: var(--tracking-display);
+  margin-top: var(--sp-12); line-height: var(--lh-h2);
+}
+.prose h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
+.prose h2 { font-size: var(--text-h2); }
+.prose h3 { font-size: var(--text-h3); }
+.prose a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(138,182,255,0.3); }
+.prose a:hover { border-bottom-color: var(--accent); }
+.prose strong { color: var(--fg); font-weight: 500; }
+.prose em { color: var(--fg-muted); }
+.prose ul, .prose ol { padding-left: var(--sp-6); }
+.prose li { margin-top: var(--sp-2); }
+.prose li::marker { color: var(--accent); }
+.prose blockquote {
+  border-left: 1px solid var(--accent);
+  padding-left: var(--sp-6); color: var(--fg-muted); font-style: italic;
+}
+.prose code {
+  font-family: var(--font-mono); font-size: 0.92em;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 0.1em 0.4em; color: var(--fg);
+}
+.prose pre {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: var(--sp-6); overflow-x: auto;
+}
+.prose pre code { background: none; border: none; padding: 0; font-size: var(--text-small); }
+.prose img { max-width: 100%; height: auto; border-radius: var(--r-lg); border: 1px solid var(--border); }
+.prose hr { border: none; border-top: 1px solid var(--border); }
+.prose table { width: 100%; border-collapse: collapse; font-size: var(--text-small); }
+.prose th, .prose td { border: 1px solid var(--border); padding: var(--sp-2) var(--sp-3); text-align: left; }
+.prose th { color: var(--fg); font-weight: 500; background: var(--surface); }
+
+/* === PLATE · the standard card, hover via CSS (server-renderable) ====== */
+.plate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+  text-decoration: none;
+  transition: border-color var(--duration-base) var(--ease-standard),
+              background var(--duration-base) var(--ease-standard);
+}
+a.plate:hover { border-color: var(--accent); background: var(--surface-raised); }
+
+/* === REVEAL · scroll-driven, always degrades to visible =============== */
+@keyframes reveal-up { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* Default: visible. Covers no-JS, reduced-motion, and browsers without
+   scroll-driven animation support (e.g. Safari). Content is never hidden
+   unless the enhancement below is fully supported. */
+.reveal { opacity: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      opacity: 0;
+      animation: reveal-up var(--duration-slow) var(--ease-standard) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+  /* hero load stagger — time-based, plays once on load, ends visible */
+  .load-up {
+    opacity: 0;
+    animation: reveal-up var(--duration-slow) var(--ease-standard) both;
+    animation-delay: var(--d, 0ms);
+  }
+}
