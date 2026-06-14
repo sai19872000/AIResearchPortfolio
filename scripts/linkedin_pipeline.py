@@ -60,10 +60,14 @@ def _http(method: str, url: str, *, headers=None, data=None, form=False):
             body = json.dumps(data).encode()
             h.setdefault("Content-Type", "application/json")
     req = urllib.request.Request(url, data=body, headers=h, method=method)
-    with urllib.request.urlopen(req) as r:
-        raw = r.read()
-        ct = r.headers.get("Content-Type", "")
-        return json.loads(raw) if "json" in ct else raw
+    try:
+        with urllib.request.urlopen(req) as r:
+            raw = r.read()
+            ct = r.headers.get("Content-Type", "")
+            return json.loads(raw) if "json" in ct else raw
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "ignore")[:600]
+        raise RuntimeError(f"{method} {url} -> HTTP {e.code}: {detail}") from None
 
 
 def _env(name: str) -> str:
@@ -191,11 +195,14 @@ def _load_post(slug: str) -> dict:
 
 
 def build_draft(post: dict) -> str:
-    """LinkedIn copy in BRAND voice (lowercase, no exclamation, no hype).
-    If the post already has a curated `linkedinPost`, use it verbatim."""
-    if post.get("linkedinPost"):
-        return post["linkedinPost"]
+    """LinkedIn copy in the post's voice. Uses a curated `linkedinPost` if set,
+    else builds from the post. Always ensures the article link is present."""
     url = f"{SITE}/blog/{post['slug']}"
+    if post.get("linkedinPost"):
+        text = post["linkedinPost"].strip()
+        if "/blog/" not in text:  # writer's caption often omits the link
+            text = f"{text}\n\n{url}"
+        return text
     summary = (post.get("summary") or "").strip()
     tags = post.get("tags") or []
     hashtags = " ".join("#" + t.replace("-", "") for t in tags[:4])
@@ -292,9 +299,14 @@ def cmd_publish(a):
     owner = _member_urn(access)
     media = []
     if image:
-        asset = _upload_image(access, owner, image)
-        media = [{"status": "READY", "media": asset,
-                  "title": {"text": post["title"][:200]}}]
+        try:
+            asset = _upload_image(access, owner, image)
+            media = [{"status": "READY", "media": asset,
+                      "title": {"text": post["title"][:200]}}]
+        except Exception as e:
+            # Non-fatal: post text + link; LinkedIn renders a preview card from
+            # the article's OG image instead of an attached image.
+            print(f"  image upload failed ({str(e)[:100]}); posting with link preview instead")
     body = {
         "author": owner,
         "lifecycleState": "PUBLISHED",
