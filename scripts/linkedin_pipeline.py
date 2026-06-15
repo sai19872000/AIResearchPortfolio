@@ -298,7 +298,7 @@ def _upload_image(access: str, owner: str, image: Path) -> str:
 
 
 def _create_post(access: str, owner: str, commentary: str,
-                 image_urn: str | None = None, alt_text: str | None = None) -> str | None:
+                 image_urn: str | None = None, alt_text: str | None = None) -> str:
     """Create an organic member post via the Posts API. `commentary` must
     already be little-escaped. Returns the post URN from the x-restli-id header."""
     body = {
@@ -315,7 +315,12 @@ def _create_post(access: str, owner: str, commentary: str,
     h = {**_li_headers(access), "Content-Type": "application/json"}
     _status, resp_headers, _raw = _send("POST", API + "/rest/posts",
                                         headers=h, body=json.dumps(body).encode())
-    return resp_headers.get("x-restli-id")  # urn:li:share:... or urn:li:ugcPost:...
+    urn = resp_headers.get("x-restli-id")  # urn:li:share:... or urn:li:ugcPost:...
+    if not urn:
+        # A 2xx with no URN must not look like success — the caller records
+        # linkedinPostId for dedup, and a null id would let the watcher re-post.
+        raise RuntimeError("post created but no x-restli-id header returned")
+    return urn
 
 
 def _edit_commentary(access: str, urn: str, commentary: str) -> None:
