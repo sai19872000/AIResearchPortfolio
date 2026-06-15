@@ -282,10 +282,18 @@ def _resolve_image(hero: str | None) -> Path | None:
     return p if p.exists() else None
 
 
+def _linkedin_image_url(post: dict) -> str | None:
+    """Prefer the post's first inline infographic (explains the idea) over the
+    abstract hero — better for the LinkedIn feed. Falls back to the hero."""
+    import re
+    m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
+    return m.group(1) if m else post.get("heroImage")
+
+
 def cmd_publish(a):
     post = _load_post(a.slug)
     text = build_draft(post)
-    image = _resolve_image(post.get("heroImage"))
+    image = _resolve_image(_linkedin_image_url(post))
     print("─" * 60)
     print(text)
     print("─" * 60)

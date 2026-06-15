@@ -87,12 +87,14 @@ TASK = """Read the brief at {wd}/brief.md and write a complete blog post for sai
 
 Voice: you ARE Dr. Sai Teja Pusuluri — a PhD physicist who leads generative and agentic AI in production. Technical authority, specific over vague, first person, calm, editorial. No hype words (no "revolutionary", "seamless", "unleash", "game-changing"). No emoji. Markdown body with ## section headings; do NOT repeat the title as an H1.
 
-Use the `blog-art` skill: generate exactly ONE hero image (use slug `{slug}`) and ONE to TWO inline infographics ONLY where a concept is genuinely clearer shown than told (skip infographics for a purely narrative post). Embed each infographic inline in the post markdown where it belongs, using the ART_URL the skill prints.
+Use the `blog-art` skill: generate exactly ONE hero image (use slug `{slug}`) AND at least ONE inline infographic that captures the post's core idea — a real diagram (architecture, pipeline, tradeoff, or comparison), since this infographic doubles as the LinkedIn visual. Add a second infographic only where another concept is clearer shown than told. Embed each infographic inline in the post markdown where it belongs, using the ART_URL the skill prints.
 
 Cite the brief's sources where relevant with inline links; never fabricate sources or quotes.
 
+LinkedIn caption rule: the `linkedinPost` is NOT the blog body. Write it in a neutral, third-person framing that PRESENTS the post — a sharp hook about the idea, then a short line like "new post on <topic>". Do NOT use first person in the caption: no "I wrote", "I built", "my", "I think". (The blog body stays first person; only the caption avoids it.) 2-4 hashtags.
+
 When finished, write ONLY the final post as JSON to {wd}/post.json with EXACTLY these keys:
-{{"title": "sentence case", "summary": "1-2 sentences", "content": "markdown body; infographics embedded as ![alt](ART_URL)", "tags": ["3-6 kebab-case"], "readTime": 7, "linkedinPost": "caption with 2-4 hashtags", "heroImage": "the hero ART_URL", "usedReferences": [{{"title": "...", "url": "... or null"}}]}}
+{{"title": "sentence case", "summary": "1-2 sentences", "content": "markdown body; infographics embedded as ![alt](ART_URL)", "tags": ["3-6 kebab-case"], "readTime": 7, "linkedinPost": "neutral caption per the rule above, 2-4 hashtags", "heroImage": "the hero ART_URL", "usedReferences": [{{"title": "...", "url": "... or null"}}]}}
 Write the file; do not print the JSON to stdout. Do not publish."""
 
 
@@ -153,6 +155,20 @@ def process(db, doc) -> None:
         doc.reference.update({"status": "failed", "error": str(e)[:400], "updatedAt": _now()})
 
 
+def reset_stale(db) -> int:
+    """Re-queue any request stuck in 'generating' (e.g. the watcher was
+    restarted mid-generation). Only one watcher runs, so 'generating' on
+    startup is always stale."""
+    from google.cloud.firestore_v1.base_query import FieldFilter
+    n = 0
+    for d in db.collection("blogGenRequests").where(filter=FieldFilter("status", "==", "generating")).stream():
+        d.reference.update({"status": "queued"})
+        n += 1
+    if n:
+        print(f"re-queued {n} stale 'generating' request(s)")
+    return n
+
+
 def poll_once(db) -> int:
     from google.cloud.firestore_v1.base_query import FieldFilter
     docs = [d for d in db.collection("blogGenRequests").where(filter=FieldFilter("status", "==", "queued")).stream()]
@@ -197,6 +213,7 @@ def main():
     ap.add_argument("--interval", type=int, default=30)
     args = ap.parse_args()
     db = _db()
+    reset_stale(db)
     if args.once:
         n = poll_once(db)
         a = autopost_new_published(db)
