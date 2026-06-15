@@ -254,9 +254,12 @@ def _upload_image(access: str, owner: str, image: Path) -> str:
                                               "identifier": "urn:li:userGeneratedContent"}]}})
     val = reg["value"]
     asset = val["asset"]
-    upload_url = val["uploadMechanism"][
-        "com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]["uploadUrl"]
-    _http("POST", upload_url, headers={"Authorization": f"Bearer {access}"},
+    mech = val["uploadMechanism"]["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]
+    # LinkedIn's binary upload is a PUT (POST returns 400); pass back its headers.
+    _http("PUT", mech["uploadUrl"],
+          headers={"Authorization": f"Bearer {access}",
+                   "Content-Type": "application/octet-stream",
+                   **(mech.get("headers") or {})},
           data=image.read_bytes())
     return asset
 
