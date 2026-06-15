@@ -27,10 +27,10 @@ export default async function HomePage() {
                 respect the evidence, and build things that survive contact with the real world.
               </p>
               <p>
-                Today I lead generative and agentic AI at <strong>Discover</strong> — fine-tuning LLMs,
-                designing multi-agent workflows, and standing up the MLOps that keeps them honest in
-                production. I still teach and publish on the side, mostly computer vision for
-                brain-organoid research at Ohio University.
+                Today I build agentic enterprise applications at <strong>GE Aerospace</strong> as a
+                Sr. Staff Data Scientist — designing multi-agent systems on Databricks and AWS with the
+                Claude Agent SDK, and the MLOps that keeps them honest in production. I still teach and
+                publish on the side, mostly computer vision for brain-organoid research at Ohio University.
               </p>
               <p>{p.about.description}</p>
             </div>
