@@ -162,6 +162,35 @@ def poll_once(db) -> int:
     return len(docs)
 
 
+def autopost_new_published(db) -> int:
+    """Full-auto blog -> LinkedIn: post any PUBLISHED post that hasn't been
+    posted yet. Dedup on linkedinPostId; give up after 2 failed tries so a bad
+    token doesn't retry forever. Pre-automation posts were marked handled, so
+    only NEW publishes fire. Set LINKEDIN_AUTOPOST_DRY=1 to dry-run."""
+    from google.cloud.firestore_v1.base_query import FieldFilter
+    site = os.environ.get("SITE_BASE_URL", "https://saiteja.ai")
+    dry = os.environ.get("LINKEDIN_AUTOPOST_DRY") == "1"
+    posted = 0
+    for d in db.collection("blogPosts").where(filter=FieldFilter("published", "==", True)).stream():
+        p = d.to_dict()
+        if p.get("linkedinPostId") or (p.get("linkedinTries") or 0) >= 2:
+            continue
+        slug = p["slug"]
+        d.reference.update({"linkedinTries": (p.get("linkedinTries") or 0) + 1})
+        cmd = [sys.executable, str(ROOT / "scripts" / "linkedin_pipeline.py"), "publish", slug]
+        if not dry:
+            cmd.append("--publish")
+        print(f"→ linkedin {'(dry) ' if dry else ''}auto-post: {slug}")
+        r = subprocess.run(cmd, cwd=str(ROOT), env={**os.environ, "SITE_BASE_URL": site},
+                           capture_output=True, text=True, timeout=240)
+        if r.returncode == 0 and (dry or "posted:" in r.stdout):
+            print(f"  ✓ {'dry-ok' if dry else 'posted'}: {slug}")
+            posted += 1
+        else:
+            print(f"  ✗ linkedin failed {slug}: {(r.stderr or r.stdout)[-200:]}")
+    return posted
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
@@ -169,12 +198,15 @@ def main():
     args = ap.parse_args()
     db = _db()
     if args.once:
-        print(f"processed {poll_once(db)} request(s)")
+        n = poll_once(db)
+        a = autopost_new_published(db)
+        print(f"processed {n} request(s); auto-posted {a} to LinkedIn")
         return
-    print(f"watching blogGenRequests every {args.interval}s … (ctrl-c to stop)")
+    print(f"watching blogGenRequests + new publishes every {args.interval}s … (ctrl-c to stop)")
     while True:
         try:
             poll_once(db)
+            autopost_new_published(db)
         except Exception as e:
             print(f"poll error: {e}")
         time.sleep(args.interval)
