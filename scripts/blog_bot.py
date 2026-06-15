@@ -128,14 +128,23 @@ def handle_message(msg: dict):
         return handle_document(msg)
     if not text:
         return
+    # A reply to a draft/published card = "rewrite this caption", not a new idea.
+    reply = msg.get("reply_to_message")
+    if reply and not text.startswith("/") and handle_caption_edit(reply, text):
+        return
     if text.startswith("/start"):
         send("👋 This is your blog desk. Send me an <b>idea</b> (a sentence, or with links / a PDF) and "
              "I'll write a draft, then send it back here with a <b>Publish</b> / <b>Reject</b> choice. "
-             "Publishing posts it to the blog and LinkedIn.\n\nCommands: /queue  ·  /help")
+             "Publishing posts it to the blog and LinkedIn.\n\n"
+             "To change a caption, <b>reply</b> to a draft (or published) card with the new wording — "
+             "before publishing it updates the draft; after, it edits the live LinkedIn post.\n\n"
+             "Commands: /queue  ·  /help")
         return
     if text.startswith("/help"):
         send("Send an idea (optionally with URLs or a PDF) → I queue a draft → you get it here to "
-             "Publish or Reject. Same queue as the website. /queue shows what's in flight.")
+             "Publish or Reject. Same queue as the website. /queue shows what's in flight.\n\n"
+             "Reply to any draft/published card with new text to rewrite its caption "
+             "(edits the live LinkedIn post once it's published).")
         return
     if text.startswith("/queue"):
         return cmd_queue()
@@ -178,7 +187,8 @@ def notify_ready_drafts(db):
         body = (f"📝 <b>{html.escape(p['title'])}</b>\n\n"
                 f"{html.escape((p.get('summary') or '')[:300])}\n\n"
                 f"<i>LinkedIn caption:</i>\n{html.escape(cap[:500])}\n\n"
-                f"📖 <a href=\"{preview_url(slug)}\">read the full draft</a>")
+                f"📖 <a href=\"{preview_url(slug)}\">read the full draft</a>\n"
+                "↩️ reply to this message to rewrite the caption")
         img = _draft_image(p)
         if img:
             res = tg("sendPhoto", chat_id=CHAT_ID, photo=img, caption=body[:1020],
@@ -195,6 +205,44 @@ def _find_by_key(db, key: str):
         if d.to_dict().get("tgKey") == key:
             return d
     return None
+
+
+def _find_by_message_id(db, mid):
+    for d in db.collection("blogPosts").stream():
+        if d.to_dict().get("tgMessageId") == mid:
+            return d
+    return None
+
+
+def handle_caption_edit(reply: dict, new_text: str) -> bool:
+    """A text reply to a draft/published card means "rewrite this caption".
+    If the post is already on LinkedIn, edit the live post; if it's still a
+    draft, update the caption the watcher will post. Returns True when the
+    reply matched a known post (so it shouldn't be treated as a new idea)."""
+    db = _db()
+    doc = _find_by_message_id(db, reply.get("message_id"))
+    if not doc:
+        return False
+    p = doc.to_dict()
+    slug = p["slug"]
+    if p.get("linkedinPostId"):
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "linkedin_pipeline.py"),
+             "edit", slug, new_text],
+            cwd=str(ROOT), env={**os.environ, "SITE_BASE_URL": SITE},
+            capture_output=True, text=True, timeout=120)
+        if r.returncode == 0 and "edited:" in r.stdout:
+            send(f"✏️ Caption updated on LinkedIn — <b>{html.escape(p['title'])}</b>.")
+        else:
+            send("⚠️ Couldn't edit the LinkedIn caption.\n"
+                 f"<code>{html.escape((r.stderr or r.stdout)[-250:])}</code>")
+    else:
+        link = f"{SITE}/blog/{slug}"
+        capped = new_text if "/blog/" in new_text else f"{new_text}\n\n{link}"
+        doc.reference.update({"linkedinPost": capped, "updatedAt": _now()})
+        send(f"✏️ Caption updated for <b>{html.escape(p['title'])}</b> — "
+             "I'll use it when this is posted to LinkedIn.")
+    return True
 
 
 def handle_callback(cb: dict, db):
