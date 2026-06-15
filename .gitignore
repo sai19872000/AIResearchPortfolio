@@ -24,3 +24,6 @@ next-env.d.ts
 
 # generated blog art (served from GCS, not bundled)
 public/art/blog/
+
+__pycache__/
+*.pyc
