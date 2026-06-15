@@ -6,6 +6,11 @@ free, self-serve "Share on LinkedIn" product (scope w_member_social) — no
 partner approval, no cost, ToS-compliant. Apify and browser automation are
 deliberately NOT used (scraping-only / account-ban risk).
 
+Uses the versioned Posts API (`/rest/posts`) + Images API (`/rest/images`),
+not the retired ugcPosts/assets endpoints. The Posts API lets us EDIT a live
+post's caption after the fact (`commentary` is an updatable field) — the one
+thing the LinkedIn UI won't do for API-created posts.
+
 Hard rules honoured:
   * Nothing posts without an explicit human gate. `publish` is a DRY RUN that
     shows the draft (and can push a preview to Telegram) unless you pass
@@ -23,6 +28,10 @@ Subcommands:
   publish <slug> [--publish]
                            dry-run by default (shows draft + sends Telegram
                            preview); with --publish, actually posts.
+  edit <slug> "<text>"     replace the caption of an already-posted post on
+                           LinkedIn (PARTIAL_UPDATE of commentary).
+  delete <slug> --yes      delete the live LinkedIn post (irreversible — the
+                           --yes gate is required).
 
 Credentials live in Secret Manager (auracle-prod-311), read with your gcloud
 (owner) ADC: `linkedin-client-id`, `linkedin-client-secret`,
@@ -41,13 +50,30 @@ os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 API = "https://api.linkedin.com"
 OAUTH = "https://www.linkedin.com/oauth/v2"
+# Versioned-API moniker (YYYYMM). Bump when LinkedIn sunsets old months; the
+# Posts/Images endpoints require this header on every call.
+LINKEDIN_VERSION = os.environ.get("LINKEDIN_VERSION", "202606")
 SCOPES = "openid profile w_member_social"
 SITE = os.environ.get("SITE_BASE_URL", "https://saiteja.ai")
 FIRESTORE_PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
 FIRESTORE_DB = os.environ.get("FIRESTORE_DATABASE_ID", "saiteja-site")
 
 
+def _send(method: str, url: str, *, headers=None, body=None):
+    """Low-level request. Returns (status, response-headers, raw-bytes); the
+    headers object is case-insensitive (`.get('x-restli-id')`)."""
+    req = urllib.request.Request(url, data=body, headers=dict(headers or {}), method=method)
+    try:
+        with urllib.request.urlopen(req) as r:
+            return r.status, r.headers, r.read()
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "ignore")[:600]
+        raise RuntimeError(f"{method} {url} -> HTTP {e.code}: {detail}") from None
+
+
 def _http(method: str, url: str, *, headers=None, data=None, form=False):
+    """JSON/form helper on top of _send. Returns the parsed body (dict for
+    JSON, bytes otherwise, None for an empty 204)."""
     h = dict(headers or {})
     body = None
     if data is not None:
@@ -59,15 +85,28 @@ def _http(method: str, url: str, *, headers=None, data=None, form=False):
         else:
             body = json.dumps(data).encode()
             h.setdefault("Content-Type", "application/json")
-    req = urllib.request.Request(url, data=body, headers=h, method=method)
-    try:
-        with urllib.request.urlopen(req) as r:
-            raw = r.read()
-            ct = r.headers.get("Content-Type", "")
-            return json.loads(raw) if "json" in ct else raw
-    except urllib.error.HTTPError as e:
-        detail = e.read().decode("utf-8", "ignore")[:600]
-        raise RuntimeError(f"{method} {url} -> HTTP {e.code}: {detail}") from None
+    _status, resp_headers, raw = _send(method, url, headers=h, body=body)
+    if not raw:
+        return None
+    ct = resp_headers.get("Content-Type", "")
+    return json.loads(raw) if "json" in ct else raw
+
+
+def _li_headers(access: str) -> dict:
+    """Headers every versioned Posts/Images call needs."""
+    return {"Authorization": f"Bearer {access}",
+            "LinkedIn-Version": LINKEDIN_VERSION,
+            "X-Restli-Protocol-Version": "2.0.0"}
+
+
+# LinkedIn "little" text format reserves these; backslash-escape so they render
+# literally. '#' is left alone so plain "#tag" still becomes a hashtag (LinkedIn
+# converts it on input), matching how the writer composes captions.
+_LITTLE_RESERVED = set("\\|{}@[]()<>*_~")
+
+
+def _escape_little(text: str) -> str:
+    return "".join("\\" + c if c in _LITTLE_RESERVED else c for c in text)
 
 
 def _env(name: str) -> str:
@@ -245,23 +284,52 @@ def _tg_preview(text: str, image: Path | None):
 
 
 def _upload_image(access: str, owner: str, image: Path) -> str:
-    reg = _http("POST", API + "/v2/assets?action=registerUpload",
-                headers={"Authorization": f"Bearer {access}"},
-                data={"registerUploadRequest": {
-                    "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                    "owner": owner,
-                    "serviceRelationships": [{"relationshipType": "OWNER",
-                                              "identifier": "urn:li:userGeneratedContent"}]}})
-    val = reg["value"]
-    asset = val["asset"]
-    mech = val["uploadMechanism"]["com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest"]
-    # LinkedIn's binary upload is a PUT (POST returns 400); pass back its headers.
-    _http("PUT", mech["uploadUrl"],
+    """Images API: register an upload, PUT the bytes, return the image URN."""
+    init = _http("POST", API + "/rest/images?action=initializeUpload",
+                 headers=_li_headers(access),
+                 data={"initializeUploadRequest": {"owner": owner}})
+    val = init["value"]
+    # Binary upload is a PUT to the returned signed URL, with the bearer header.
+    _send("PUT", val["uploadUrl"],
           headers={"Authorization": f"Bearer {access}",
-                   "Content-Type": "application/octet-stream",
-                   **(mech.get("headers") or {})},
-          data=image.read_bytes())
-    return asset
+                   "Content-Type": "application/octet-stream"},
+          body=image.read_bytes())
+    return val["image"]  # urn:li:image:...
+
+
+def _create_post(access: str, owner: str, commentary: str,
+                 image_urn: str | None = None, alt_text: str | None = None) -> str | None:
+    """Create an organic member post via the Posts API. `commentary` must
+    already be little-escaped. Returns the post URN from the x-restli-id header."""
+    body = {
+        "author": owner,
+        "commentary": commentary,
+        "visibility": "PUBLIC",
+        "distribution": {"feedDistribution": "MAIN_FEED",
+                         "targetEntities": [], "thirdPartyDistributionChannels": []},
+        "lifecycleState": "PUBLISHED",
+        "isReshareDisabledByAuthor": False,
+    }
+    if image_urn:
+        body["content"] = {"media": {"id": image_urn, "altText": (alt_text or "")[:4000]}}
+    h = {**_li_headers(access), "Content-Type": "application/json"}
+    _status, resp_headers, _raw = _send("POST", API + "/rest/posts",
+                                        headers=h, body=json.dumps(body).encode())
+    return resp_headers.get("x-restli-id")  # urn:li:share:... or urn:li:ugcPost:...
+
+
+def _edit_commentary(access: str, urn: str, commentary: str) -> None:
+    """PARTIAL_UPDATE the commentary of a live post. `commentary` little-escaped."""
+    h = {**_li_headers(access), "Content-Type": "application/json",
+         "X-RestLi-Method": "PARTIAL_UPDATE"}
+    url = API + "/rest/posts/" + urllib.parse.quote(urn, safe="")
+    _send("POST", url, headers=h,
+          body=json.dumps({"patch": {"$set": {"commentary": commentary}}}).encode())
+
+
+def _delete_post(access: str, urn: str) -> None:
+    h = {**_li_headers(access), "X-RestLi-Method": "DELETE"}
+    _send("DELETE", API + "/rest/posts/" + urllib.parse.quote(urn, safe=""), headers=h)
 
 
 def _resolve_image(hero: str | None) -> Path | None:
@@ -308,36 +376,56 @@ def cmd_publish(a):
     # --- live publish (explicit human gate passed) ---
     access = _access_token()
     owner = _member_urn(access)
-    media = []
+    image_urn = None
     if image:
         try:
-            asset = _upload_image(access, owner, image)
-            media = [{"status": "READY", "media": asset,
-                      "title": {"text": post["title"][:200]}}]
+            image_urn = _upload_image(access, owner, image)
         except Exception as e:
             # Non-fatal: post text + link; LinkedIn renders a preview card from
             # the article's OG image instead of an attached image.
-            print(f"  image upload failed ({str(e)[:100]}); posting with link preview instead")
-    body = {
-        "author": owner,
-        "lifecycleState": "PUBLISHED",
-        "specificContent": {"com.linkedin.ugc.ShareContent": {
-            "shareCommentary": {"text": text},
-            "shareMediaCategory": "IMAGE" if media else "NONE",
-            **({"media": media} if media else {}),
-        }},
-        "visibility": {"com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"},
-    }
-    res = _http("POST", API + "/v2/ugcPosts",
-                headers={"Authorization": f"Bearer {access}",
-                         "X-Restli-Protocol-Version": "2.0.0"}, data=body)
-    post_id = res.get("id") if isinstance(res, dict) else None
-    print("posted:", post_id)
-    # record on the post so we don't double-post
+            print(f"  image upload failed ({str(e)[:100]}); posting text-only")
+    post_urn = _create_post(access, owner, _escape_little(text),
+                            image_urn=image_urn, alt_text=post["title"])
+    print("posted:", post_urn)
+    # Record on the post so we don't double-post and so `edit` can find it.
+    # Store the UNescaped caption so edits/display work from clean text.
     from google.cloud import firestore
     db = firestore.Client(project=FIRESTORE_PROJECT, database=FIRESTORE_DB)
     db.collection("blogPosts").document(a.slug).update({"linkedinPost": text,
-                                                        "linkedinPostId": post_id})
+                                                        "linkedinPostId": post_urn})
+
+
+def cmd_edit(a):
+    """Replace the caption of an already-posted LinkedIn post."""
+    post = _load_post(a.slug)
+    urn = post.get("linkedinPostId")
+    if not urn:
+        sys.exit(f"{a.slug} isn't on LinkedIn yet (no linkedinPostId) — publish it first.")
+    new_text = a.text.strip()
+    if "/blog/" not in new_text:  # keep the article link, same rule as build_draft
+        new_text = f"{new_text}\n\n{SITE}/blog/{post['slug']}"
+    access = _access_token()
+    _edit_commentary(access, urn, _escape_little(new_text))
+    print(f"edited: {urn}")
+    from google.cloud import firestore
+    db = firestore.Client(project=FIRESTORE_PROJECT, database=FIRESTORE_DB)
+    db.collection("blogPosts").document(a.slug).update({"linkedinPost": new_text})
+
+
+def cmd_delete(a):
+    """Delete the live LinkedIn post (irreversible — gated behind --yes)."""
+    post = _load_post(a.slug)
+    urn = post.get("linkedinPostId")
+    if not urn:
+        sys.exit(f"{a.slug} has no linkedinPostId — nothing to delete on LinkedIn.")
+    if not a.yes:
+        sys.exit("deleting a live LinkedIn post is irreversible — re-run with --yes to confirm.")
+    access = _access_token()
+    _delete_post(access, urn)
+    print(f"deleted: {urn}")
+    from google.cloud import firestore
+    db = firestore.Client(project=FIRESTORE_PROJECT, database=FIRESTORE_DB)
+    db.collection("blogPosts").document(a.slug).update({"linkedinPostId": firestore.DELETE_FIELD})
 
 
 def main():
@@ -353,6 +441,11 @@ def main():
     pub = sub.add_parser("publish"); pub.add_argument("slug")
     pub.add_argument("--publish", action="store_true", help="actually post (default: dry run)")
     pub.set_defaults(fn=cmd_publish)
+    ed = sub.add_parser("edit"); ed.add_argument("slug"); ed.add_argument("text")
+    ed.set_defaults(fn=cmd_edit)
+    de = sub.add_parser("delete"); de.add_argument("slug")
+    de.add_argument("--yes", action="store_true", help="confirm irreversible delete")
+    de.set_defaults(fn=cmd_delete)
     args = ap.parse_args()
     args.fn(args)
 
