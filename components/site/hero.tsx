@@ -8,7 +8,7 @@ const d = (ms: number): CSSProperties => ({ ['--d' as string]: `${ms}ms` })
 export function Hero({ portfolio }: { portfolio: Portfolio }) {
   const { personal, education } = portfolio
   const stats = [
-    { k: '8+', v: 'years building industry AI' },
+    { k: '9+', v: 'years building industry AI' },
     { k: 'PhD', v: 'physics · neural networks' },
     { k: '4', v: 'peer-reviewed papers' },
   ]

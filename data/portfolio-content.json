@@ -3,11 +3,11 @@
     "name": "Dr. Sai Teja Pusuluri",
     "title": "Generative AI Expert",
     "subtitle": "Building the future of intelligent systems",
-    "bio": "PhD in Physics with over 8 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
+    "bio": "PhD in Physics with over 9 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
     "email": "hello@saiteja.ai",
     "phone": "740-818-6309",
     "location": "Lewis Center, Ohio, USA",
-    "overview": "PhD in Physics with over 8 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
+    "overview": "PhD in Physics with over 9 years of industry experience in Generative AI, Agentic AI Workflows, Traditional ML/AI and MLOps. Proven track record of leading cross-functional teams, driving innovation, and delivering scalable AI solutions.",
     "resumeUrl": "/api/resume",
     "LinkedInUrl": "https://www.linkedin.com/in/sai-teja-pusuluri/",
     "GitHubUrl": "https://github.com/sai19872000"
@@ -41,6 +41,7 @@
   "skills": {
     "agenticAI": [
       "Agentic Tools",
+      "Claude Agent SDK",
       "MCP servers",
       "LangGraph",
       "CrewAI",
@@ -57,6 +58,7 @@
       "Chain-of-Thought"
     ],
     "mlops": [
+      "Databricks",
       "Docker",
       "AWS SageMaker",
       "Amazon ECR",
@@ -79,9 +81,19 @@
   },
   "experience": [
     {
+      "title": "Sr. Staff Data Scientist",
+      "company": "GE Aerospace",
+      "period": "Sep. 2025 - Present",
+      "achievements": [
+        "Build agentic enterprise applications that put LLM-powered workflows into production across the business.",
+        "Architect multi-agent systems on Databricks and AWS, integrating the Claude Agent SDK for tool-using agents.",
+        "Stand up the data and MLOps foundation — pipelines, evaluation, and guardrails — that keeps enterprise AI reliable at scale."
+      ]
+    },
+    {
       "title": "Manager/Lead - Generative AI",
       "company": "Discover",
-      "period": "Apr. 2022 - Present",
+      "period": "Apr. 2022 - Sep. 2025",
       "achievements": [
         "Pioneered agentic AI workflows, automating customer experience and operational processes and generating comprehensive model documentation via LLM pipelines, resulting in a 75% reduction in manual effort",
         "Fine-tuned LLMs for company-specific datasets: applied LoRA, QLoRA, and quantization techniques to enhance local inference throughput by 40% and reduce GPU memory usage by 25%",
