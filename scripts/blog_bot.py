@@ -177,25 +177,40 @@ def _draft_image(post: dict) -> str | None:
     return m.group(1) or post.get("heroImage")
 
 
+def _draft_card(p: dict) -> str:
+    """Approval-card text. Field caps keep the photo-CAPTION form safely under
+    Telegram's 1024-char limit *with the trailing <a> tag intact* — slicing a
+    long caption mid-tag makes Telegram reject the whole HTML caption (that
+    silently dropped a draft once: long post → 1079-char caption → 400)."""
+    cap = (p.get("linkedinPost") or p.get("summary") or "").strip()
+    return (f"📝 <b>{html.escape(p['title'][:140])}</b>\n\n"
+            f"{html.escape((p.get('summary') or '')[:200])}\n\n"
+            f"<i>LinkedIn caption:</i>\n{html.escape(cap[:360])}\n\n"
+            f"📖 <a href=\"{preview_url(p['slug'])}\">read the full draft</a>\n"
+            "↩️ reply to this message to rewrite the caption")
+
+
 def notify_ready_drafts(db):
     for d in db.collection("blogPosts").stream():
         p = d.to_dict()
         if p.get("published") or p.get("generatedBy") != "watcher" or p.get("tgNotified"):
             continue
         slug = p["slug"]
-        cap = (p.get("linkedinPost") or p.get("summary") or "").strip()
-        body = (f"📝 <b>{html.escape(p['title'])}</b>\n\n"
-                f"{html.escape((p.get('summary') or '')[:300])}\n\n"
-                f"<i>LinkedIn caption:</i>\n{html.escape(cap[:500])}\n\n"
-                f"📖 <a href=\"{preview_url(slug)}\">read the full draft</a>\n"
-                "↩️ reply to this message to rewrite the caption")
+        body = _draft_card(p)
         img = _draft_image(p)
-        if img:
-            res = tg("sendPhoto", chat_id=CHAT_ID, photo=img, caption=body[:1020],
-                     parse_mode="HTML", reply_markup=kbd(slug))
-        else:
+        res = (tg("sendPhoto", chat_id=CHAT_ID, photo=img, caption=body,
+                  parse_mode="HTML", reply_markup=kbd(slug)) if img else None)
+        mid = (res.get("result") or {}).get("message_id") if res else None
+        if mid is None:
+            # No image, or the photo send failed (caption/limits, bad image URL).
+            # Fall back to a plain-text card — 4096-char limit, no remote fetch.
             res = send(body, reply_markup=kbd(slug))
-        mid = (res.get("result") or {}).get("message_id")
+            mid = (res.get("result") or {}).get("message_id")
+        if mid is None:
+            # Still undelivered — leave tgNotified UNSET so the next loop retries
+            # instead of silently marking it done (the old bug).
+            print(f"notify FAILED {slug}: {res}")
+            continue
         d.reference.update({"tgNotified": True, "tgMessageId": mid, "tgKey": tgkey(slug)})
         print(f"notified draft: {slug}")
 
