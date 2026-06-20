@@ -68,8 +68,13 @@ def fetch_url_text(url: str, limit: int = 12000) -> str:
 def write_brief(workdir: Path, req: dict, slug: str) -> None:
     opts = req.get("options", {}) or {}
     length = {"short": "~600 words", "deep": "~1800 words"}.get(opts.get("length"), "~1000 words")
+    head = [f"# Brief\n\nSLUG: {slug}\nTOPIC: {req['topic']}\nANGLE / NOTES: {req.get('angle') or '(none)'}"]
+    if req.get("kind"):
+        head.append(f"POST KIND: {req['kind']}")
+    if req.get("sourceUrl"):
+        head.append(f"ORIGINAL SOURCE LINK (you MUST link this in the post): {req['sourceUrl']}")
     parts = [
-        f"# Brief\n\nSLUG: {slug}\nTOPIC: {req['topic']}\nANGLE / NOTES: {req.get('angle') or '(none)'}",
+        "\n".join(head),
         f"TARGET LENGTH: {length}\nTONE: {opts.get('tone') or 'technical and plain'}",
         "\n## Sources (cite where relevant; do not fabricate)\n",
     ]
@@ -90,6 +95,8 @@ Voice: you ARE Dr. Sai Teja Pusuluri — a PhD physicist who leads generative an
 Use the `blog-art` skill: generate exactly ONE hero image (use slug `{slug}`) AND at least ONE inline infographic that captures the post's core idea — a real diagram (architecture, pipeline, tradeoff, or comparison), since this infographic doubles as the LinkedIn visual. Add a second infographic only where another concept is clearer shown than told. Embed each infographic inline in the post markdown where it belongs, using the ART_URL the skill prints.
 
 Cite the brief's sources where relevant with inline links; never fabricate sources or quotes.
+
+If the brief gives an ORIGINAL SOURCE LINK, link to it explicitly near the top of the post (inline in the opening, and keep it in usedReferences) — every post must point readers to the primary source. If POST KIND is "announcement", write a tight INFORMATIONAL post — what shipped, why it matters, and a brief informed take, ~500-700 words — not a long research essay.
 
 LinkedIn caption rule: the `linkedinPost` is NOT the blog body. Write it in a neutral, third-person framing that PRESENTS the post — a sharp hook about the idea, then a short line like "new post on <topic>". Do NOT use first person in the caption: no "I wrote", "I built", "my", "I think". (The blog body stays first person; only the caption avoids it.) 2-4 hashtags.
 
@@ -147,6 +154,7 @@ def process(db, doc) -> None:
             "referenceIds": ref_ids, "imageIds": [],
             "heroImage": data.get("heroImage"), "diagrams": [],
             "generatedBy": "watcher", "genRequestId": doc.id,
+            "sourceUrl": req.get("sourceUrl"), "kind": req.get("kind"),
         })
         doc.reference.update({"status": "ready", "resultSlug": slug, "error": None, "updatedAt": now})
         print(f"  ✓ draft ready: /admin/posts/{slug}")

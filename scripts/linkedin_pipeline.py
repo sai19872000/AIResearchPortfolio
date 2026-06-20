@@ -237,19 +237,24 @@ def build_draft(post: dict) -> str:
     """LinkedIn copy in the post's voice. Uses a curated `linkedinPost` if set,
     else builds from the post. Always ensures the article link is present."""
     url = f"{SITE}/blog/{post['slug']}"
+    src = (post.get("sourceUrl") or "").strip()
     if post.get("linkedinPost"):
         text = post["linkedinPost"].strip()
         if "/blog/" not in text:  # writer's caption often omits the link
             text = f"{text}\n\n{url}"
+        if src and src not in text:  # every post links the primary source too
+            text = f"{text}\nOriginal: {src}"
         return text
     summary = (post.get("summary") or "").strip()
     tags = post.get("tags") or []
     hashtags = " ".join("#" + t.replace("-", "") for t in tags[:4])
     title = post["title"]
+    src_line = f"Original: {src}\n" if src else ""
     return (
         f"{title}\n\n"
         f"{summary}\n\n"
-        f"new on the blog → {url}\n\n"
+        f"new on the blog → {url}\n"
+        f"{src_line}\n"
         f"{hashtags}"
     ).strip()
 
