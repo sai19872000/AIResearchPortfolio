@@ -264,6 +264,8 @@ def handle_callback(cb: dict, db):
     data = cb.get("data", "")
     cid = cb["id"]
     action, _, key = data.partition(":")
+    if action in ("rd", "rs"):  # research-scout recommendation
+        return handle_research_callback(db, action, key, cid)
     doc = _find_by_key(db, key)
     if not doc:
         tg("answerCallbackQuery", callback_query_id=cid, text="post not found")
@@ -305,6 +307,97 @@ def sync_published_elsewhere(db):
             d.reference.update({"tgSynced": True})
 
 
+# ---- research scout recommendations -------------------------------------
+def _research_card(c: dict) -> str:
+    v = c.get("verdict") or {}
+    badge = "📣 announcement" if c.get("kind") == "announcement" else "📄 research"
+    why = (v.get("whyItMatters") or v.get("summary") or "").strip()
+    watch = (v.get("watchOut") or "").strip()
+    lines = [f"{badge} · <i>scout pick</i>",
+             f"<b>{html.escape((c.get('title') or '')[:160])}</b>", ""]
+    if why:
+        lines += [html.escape(why[:460]), ""]
+    if watch:
+        lines += [f"⚠️ {html.escape(watch[:220])}", ""]
+    meta = []
+    if v.get("importance") is not None:
+        meta.append(f"importance {v['importance']}/10")
+    if v.get("confidence") is not None:
+        meta.append(f"confidence {v['confidence']}/10")
+    if meta:
+        lines.append(" · ".join(meta))
+    lines.append(f"🔗 <a href=\"{c.get('url')}\">original source</a>")
+    return "\n".join(lines)
+
+
+def _research_kbd(key: str):
+    return {"inline_keyboard": [[{"text": "✍️ Draft this", "callback_data": f"rd:{key}"},
+                                 {"text": "✕ Skip", "callback_data": f"rs:{key}"}]]}
+
+
+def notify_research_candidates(db):
+    """Send a Telegram card for each recommended-but-unnotified scout pick.
+    GATE 1: nothing is written until Sai taps Draft this."""
+    for d in db.collection("researchCandidates").stream():
+        c = d.to_dict()
+        if c.get("status") != "recommended" or c.get("notified"):
+            continue
+        res = send(_research_card(c), reply_markup=_research_kbd(d.id))
+        mid = (res.get("result") or {}).get("message_id")
+        if mid is None:
+            print(f"research notify FAILED {d.id}: {res}")
+            continue  # leave unnotified → retry next loop
+        d.reference.update({"notified": True, "tgMessageId": mid})
+        print(f"recommended: {(c.get('title') or '')[:50]}")
+
+
+def create_research_request(c: dict) -> str:
+    """Turn an approved recommendation into a blogGenRequest (existing pipeline).
+    Carries kind + sourceUrl so the post + LinkedIn caption link the original."""
+    now = _now()
+    kind = c.get("kind") or "research"
+    lead = "An informational post about this announcement" if kind == "announcement" \
+        else "A post about this paper"
+    return _db().collection("blogGenRequests").add({
+        "topic": f"{lead}: {c.get('title')}",
+        "angle": (c.get("verdict") or {}).get("whyItMatters"),
+        "referenceUrls": [c["url"]] if c.get("url") else [], "references": [], "options": {},
+        "kind": kind, "sourceUrl": c.get("url"),
+        "status": "queued", "error": None, "resultSlug": None,
+        "createdAt": now, "updatedAt": now, "source": "scout",
+    })[1].id
+
+
+def _edit_research_status(mid, status_html: str):
+    if not mid:
+        return
+    tg("editMessageText", chat_id=CHAT_ID, message_id=mid, text=status_html,
+       parse_mode="HTML", disable_web_page_preview=True)
+    tg("editMessageReplyMarkup", chat_id=CHAT_ID, message_id=mid, reply_markup={"inline_keyboard": []})
+
+
+def handle_research_callback(db, action, key, cid):
+    snap = db.collection("researchCandidates").document(key).get()
+    if not snap.exists:
+        tg("answerCallbackQuery", callback_query_id=cid, text="recommendation not found")
+        return
+    c = snap.to_dict()
+    mid = c.get("tgMessageId")
+    title = html.escape((c.get("title") or "")[:160])
+    if action == "rd":
+        if c.get("status") == "accepted":
+            tg("answerCallbackQuery", callback_query_id=cid, text="already queued")
+            return
+        create_research_request(c)
+        snap.reference.update({"status": "accepted"})
+        tg("answerCallbackQuery", callback_query_id=cid, text="queued ✍️")
+        _edit_research_status(mid, f"✍️ <b>Drafting</b> — {title}\nI'll send the draft to approve.")
+    elif action == "rs":
+        snap.reference.update({"status": "skipped"})
+        tg("answerCallbackQuery", callback_query_id=cid, text="skipped")
+        _edit_research_status(mid, f"✕ <b>Skipped</b> — {title}")
+
+
 # ---- offset persistence + main loop -------------------------------------
 def _offset_doc(db):
     return db.collection("_botState").document("bloggersaibot")
@@ -333,6 +426,7 @@ def main():
                     continue  # locked to one chat
                 handle_message(msg)
             od.set({"offset": offset})
+            notify_research_candidates(db)
             notify_ready_drafts(db)
             sync_published_elsewhere(db)
         except Exception as e:
