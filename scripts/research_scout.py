@@ -36,6 +36,10 @@ PAPER_FINALISTS = int(os.environ.get("SCOUT_PAPER_FINALISTS", "8"))
 ANN_FINALISTS = int(os.environ.get("SCOUT_ANN_FINALISTS", "5"))
 SKEPTIC_TOP = int(os.environ.get("SCOUT_SKEPTIC_TOP", "3"))
 MAX_RECS = int(os.environ.get("SCOUT_MAX_RECS", "3"))
+# Always surface at least this many picks for Sai to review. Threshold-first: bar-clearing
+# recommendations win; on a thin day we backfill with the top sub-bar finalists (flagged
+# belowBar) so the 8am sweep is never silent. Set 0 to restore strict quality-or-nothing.
+DAILY_FLOOR = int(os.environ.get("SCOUT_DAILY_FLOOR", "2"))
 
 # Niche relevance (broader AI/ML): high-weight core terms + adjacent terms.
 KW_CORE = ["agent", "agentic", "llm", "language model", "multi-agent", "tool use",
@@ -365,27 +369,54 @@ def _score(v: dict) -> float:
     return float(v.get("importance", 0)) * 0.6 + float(v.get("relevance", 0)) * 0.4
 
 
+def _select_final(assessed: list[dict]) -> list[dict]:
+    """Threshold-first DAILY FLOOR. If >= DAILY_FLOOR candidates cleared the bar
+    (recommend:true and not skeptic-dropped), return the top MAX_RECS of them. Otherwise
+    backfill with the highest-scoring sub-bar finalists up to DAILY_FLOOR, each flagged
+    `verdict.belowBar=True`, so Sai always gets >= DAILY_FLOOR to review (he decides at
+    review whether to post). Skeptic-dropped candidates are never surfaced."""
+    pool = [c for c in assessed if not c.get("_drop")]
+    cleared = sorted([c for c in pool if c.get("_recommended")],
+                     key=lambda c: c["_score"], reverse=True)
+    for c in cleared:
+        c["verdict"]["belowBar"] = False
+    if len(cleared) >= DAILY_FLOOR:
+        return cleared[:MAX_RECS]
+    chosen = list(cleared)
+    for c in sorted([c for c in pool if not c.get("_recommended")],
+                    key=lambda c: c["_score"], reverse=True):
+        if len(chosen) >= DAILY_FLOOR:
+            break
+        c["verdict"]["belowBar"] = True
+        chosen.append(c)
+    chosen.sort(key=lambda c: c["_score"], reverse=True)
+    return chosen
+
+
 def gate(papers: list[dict], anns: list[dict]) -> list[dict]:
-    survivors = []
-    finalists = papers + anns
-    for i, c in enumerate(finalists):
+    # Assess every finalist and KEEP all valid verdicts (recommended or not), scored — so a
+    # thin day can backfill the floor instead of returning nothing.
+    assessed = []
+    for c in papers + anns:
         wd = GENDIR / _cid(c["source_id"])
         v = assess(c, wd)
-        if not v or not v.get("recommend"):
+        if not v:
             continue
         c["verdict"] = {**v, "whyItMatters": v.get("summary", ""), "watchOut": ""}
         c["_score"] = _score(v)
-        survivors.append(c)
-    survivors.sort(key=lambda c: c["_score"], reverse=True)
-    # deep adversarial skeptic on the top research candidates only
-    for c in [s for s in survivors if s["kind"] == "research"][:SKEPTIC_TOP]:
+        c["_recommended"] = bool(v.get("recommend"))
+        assessed.append(c)
+    # deep adversarial skeptic on the top BAR-CLEARING research candidates only
+    cleared_research = sorted(
+        [c for c in assessed if c.get("_recommended") and c["kind"] == "research"],
+        key=lambda c: c["_score"], reverse=True)
+    for c in cleared_research[:SKEPTIC_TOP]:
         sk = skeptic(c, c["verdict"], GENDIR / _cid(c["source_id"]))
         c["verdict"]["watchOut"] = sk.get("caseAgainst", "")
         if sk.get("severity") == "high" and not sk.get("stillWorthIt", True):
             c["_drop"] = True
             print(f"    skeptic dropped: {c['title'][:50]}")
-    survivors = [c for c in survivors if not c.get("_drop")]
-    return survivors[:MAX_RECS]
+    return _select_final(assessed)
 
 
 # ── write recommendations ─────────────────────────────────────────────────────
@@ -397,15 +428,17 @@ def write_recs(db, recs: list[dict], dry: bool) -> None:
             "title": c["title"], "url": c["url"], "abstract": (c.get("abstract") or "")[:2000],
             "authors": c.get("authors") or [], "signals": c["signals"],
             "prefilterScore": c.get("prefilterScore"), "verdict": c["verdict"],
+            "belowBar": bool(c["verdict"].get("belowBar")),
             "status": "recommended", "notified": False,
             "tgKey": _cid(c["source_id"]), "createdAt": now,
         }
+        tag = "floor pick (below bar)" if c["verdict"].get("belowBar") else "recommended"
         if dry:
-            print(f"  [DRY] would recommend: {c['kind']} · {c['title'][:60]}  "
+            print(f"  [DRY] would surface ({tag}): {c['kind']} · {c['title'][:60]}  "
                   f"(imp {c['verdict'].get('importance')}, conf {c['verdict'].get('confidence')})")
             continue
         db.collection("researchCandidates").document(_cid(c["source_id"])).set(doc)
-        print(f"  ✓ recommended: {c['kind']} · {c['title'][:60]}")
+        print(f"  ✓ {tag}: {c['kind']} · {c['title'][:60]}")
 
 
 def main():
@@ -435,7 +468,9 @@ def main():
         return
     print("deep gate…")
     recs = gate(papers, anns)
-    print(f"→ {len(recs)} recommendation(s)")
+    floor_n = sum(1 for c in recs if c["verdict"].get("belowBar"))
+    print(f"→ {len(recs)} pick(s) for review "
+          f"({len(recs) - floor_n} cleared the bar, {floor_n} floor backfill)")
     write_recs(db, recs, args.dry_run)
     print("done.")
 
