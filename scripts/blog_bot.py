@@ -313,7 +313,8 @@ def _research_card(c: dict) -> str:
     badge = "📣 announcement" if c.get("kind") == "announcement" else "📄 research"
     why = (v.get("whyItMatters") or v.get("summary") or "").strip()
     watch = (v.get("watchOut") or "").strip()
-    lines = [f"{badge} · <i>scout pick</i>",
+    sub = " · ⚠️ <i>below bar (thin day — top pick)</i>" if (c.get("belowBar") or v.get("belowBar")) else ""
+    lines = [f"{badge} · <i>scout pick</i>{sub}",
              f"<b>{html.escape((c.get('title') or '')[:160])}</b>", ""]
     if why:
         lines += [html.escape(why[:460]), ""]
