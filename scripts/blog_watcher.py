@@ -215,6 +215,56 @@ def autopost_new_published(db) -> int:
     return posted
 
 
+# ── operator alerting: a persistently-failing watcher must not die silently ──
+# One-off blips retry next tick (journal-only). A STREAK of failures means the
+# pipeline is actually down (creds, Firestore, disk) and Sai would otherwise only
+# find out when a blog post never appears. Alert once per streak, never spam.
+ALERT_AFTER = int(os.environ.get("WATCHER_ALERT_AFTER", "5"))
+_tg_cache: dict = {}
+
+
+def _alert_telegram(text: str) -> None:
+    """Best-effort one-shot Telegram alert via the SAME bot the pipeline uses
+    (Secret Manager token, lazily fetched + cached). Never raises — alerting must
+    not be able to kill the loop it reports on."""
+    try:
+        if "token" not in _tg_cache:
+            def sec(name):
+                r = subprocess.run(["gcloud", "secrets", "versions", "access", "latest",
+                                    f"--secret={name}", f"--project={PROJECT}"],
+                                   capture_output=True, text=True, timeout=25)
+                return r.stdout.strip() if r.returncode == 0 else ""
+            _tg_cache["token"] = sec("bloggersaibot-token")
+            _tg_cache["chat"] = sec("bloggersaibot-chat-id")
+        if not (_tg_cache["token"] and _tg_cache["chat"]):
+            return
+        body = json.dumps({"chat_id": int(_tg_cache["chat"]), "text": text}).encode()
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{_tg_cache['token']}/sendMessage",
+            data=body, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as e:  # noqa: BLE001
+        print(f"alert delivery failed: {e}")
+
+
+def prune_gen(keep: int = int(os.environ.get("GEN_KEEP", "100"))) -> int:
+    """Retention for .gen/ (one dir per generation, grows forever otherwise):
+    keep the newest `keep`, delete the rest. Never raises."""
+    try:
+        if not GENDIR.exists():
+            return 0
+        dirs = sorted((d for d in GENDIR.iterdir() if d.is_dir()),
+                      key=lambda d: d.stat().st_mtime, reverse=True)
+        removed = 0
+        for d in dirs[keep:]:
+            subprocess.run(["rm", "-rf", str(d)], timeout=30)
+            removed += 1
+        return removed
+    except Exception as e:  # noqa: BLE001
+        print(f"gen prune skipped: {e}")
+        return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
@@ -225,15 +275,33 @@ def main():
     if args.once:
         n = poll_once(db)
         a = autopost_new_published(db)
+        prune_gen()
         print(f"processed {n} request(s); auto-posted {a} to LinkedIn")
         return
     print(f"watching blogGenRequests + new publishes every {args.interval}s … (ctrl-c to stop)")
+    streak = 0
+    alerted = False
+    ticks = 0
     while True:
         try:
             poll_once(db)
             autopost_new_published(db)
+            if alerted:
+                _alert_telegram("✅ Blog watcher recovered — polling normally again.")
+            streak = 0
+            alerted = False
         except Exception as e:
-            print(f"poll error: {e}")
+            streak += 1
+            print(f"poll error ({streak} consecutive): {e}")
+            if streak >= ALERT_AFTER and not alerted:
+                _alert_telegram(
+                    f"🔴 Blog watcher: {streak} consecutive poll failures "
+                    f"(~{streak * args.interval}s) — pipeline is NOT processing "
+                    f"requests. Last error: {str(e)[:200]}")
+                alerted = True
+        ticks += 1
+        if ticks % 120 == 0:      # roughly hourly at the default interval
+            prune_gen()
         time.sleep(args.interval)
 
 
