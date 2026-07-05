@@ -27,6 +27,7 @@ PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
 DATABASE = os.environ.get("FIRESTORE_DATABASE_ID", "saiteja-site")
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE = os.environ.get("CLAUDE_BIN", "claude")
+SCOUT_MODEL = os.environ.get("SCOUT_GATE_MODEL", "claude-sonnet-5")  # pinned: see blog_watcher
 GENDIR = ROOT / ".gen" / "scout"
 UA = {"User-Agent": "Mozilla/5.0 saiteja-research-scout"}
 
@@ -285,7 +286,7 @@ def prefilter(cands: list[dict]) -> tuple[list[dict], list[dict]]:
 def _run_agent(prompt: str, workdir: Path, out_name: str, timeout: int = 300) -> dict:
     workdir.mkdir(parents=True, exist_ok=True)
     allowed = ["Read", "Write", "Edit", "Glob", "Grep", "Bash(python:*)", "Bash(python3:*)"]
-    proc = subprocess.run([CLAUDE, "-p", prompt, "--allowedTools", *allowed],
+    proc = subprocess.run([CLAUDE, "-p", prompt, "--model", SCOUT_MODEL, "--allowedTools", *allowed],
                           cwd=str(ROOT), capture_output=True, text=True, timeout=timeout)
     out = workdir / out_name
     if not out.exists():
