@@ -26,6 +26,13 @@ PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
 DATABASE = os.environ.get("FIRESTORE_DATABASE_ID", "saiteja-site")
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE = os.environ.get("CLAUDE_BIN", "claude")
+# PIN the writer's model. Headless `claude -p` inherits the OPERATOR'S default
+# model — when that default became Fable 5 (2026-07-01), its stricter safety
+# filters started rejecting normal blog briefs ("Claude Code can't respond to
+# this request with Fable 5"), and every generation died with exit 1
+# (requests ywQLZ93/hbyycqX, 07-04/05). Long-form writing is Sonnet-tier work;
+# never let a user-preference change silently re-model a production pipeline.
+WRITER_MODEL = os.environ.get("BLOG_WRITER_MODEL", "claude-sonnet-5")
 GENDIR = ROOT / ".gen"
 
 
@@ -112,7 +119,7 @@ def run_blogger(workdir: Path, slug: str) -> dict:
     allowed = ["Read", "Write", "Edit", "Glob", "Grep", "Skill",
                "Bash(python:*)", "Bash(python3:*)"]
     proc = subprocess.run(
-        [CLAUDE, "-p", task, "--allowedTools", *allowed],
+        [CLAUDE, "-p", task, "--model", WRITER_MODEL, "--allowedTools", *allowed],
         cwd=str(ROOT), capture_output=True, text=True, timeout=1500,
     )
     out = workdir / "post.json"
