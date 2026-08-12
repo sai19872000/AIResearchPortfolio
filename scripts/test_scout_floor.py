@@ -69,6 +69,31 @@ def test_skeptic_dropped_never_surfaced_even_as_floor():
     assert _names(res) == ["B"] and res[0]["verdict"]["belowBar"] is True
 
 
+def _a(name, source, score):
+    return {"title": name, "source": source, "kind": "announcement",
+            "prefilterScore": float(score), "signals": {"keywordScore": score}}
+
+
+def test_diversify_prolific_source_cannot_monopolize():
+    # The OpenAI-only regression: one feed with many rich items outscored every
+    # other source under a global top-N. Round-robin must give each source's best
+    # item a finalist slot before any source gets a second.
+    ranked = ([_a(f"openai{i}", "openai", 10 - i) for i in range(6)] +
+              [_a("anthropic0", "anthropic", 0), _a("meta0", "meta", 0),
+               _a("deepmind0", "deepmind", 2)])
+    ranked.sort(key=lambda a: a["prefilterScore"], reverse=True)
+    res = rs._diversify(ranked, 6)
+    srcs = [c["source"] for c in res]
+    assert set(srcs[:4]) == {"openai", "anthropic", "meta", "deepmind"}, srcs
+    assert srcs.count("openai") <= 3, srcs               # extras only after every source seated
+
+
+def test_diversify_fewer_items_than_limit_no_crash():
+    res = rs._diversify([_a("x", "openai", 1)], 8)
+    assert [c["title"] for c in res] == ["x"]
+    assert rs._diversify([], 8) == []
+
+
 def test_gate_thin_day_backfills_to_floor_end_to_end():
     # Full gate() path with assess/skeptic stubbed (no LLM): only P1 clears the bar; the
     # gate must still surface 2 (P1 + the top sub-bar pick, flagged belowBar).
@@ -93,6 +118,8 @@ if __name__ == "__main__":
                  "test_zero_cleared_returns_top_two_below_bar",
                  "test_thin_input_cannot_reach_floor_no_crash",
                  "test_skeptic_dropped_never_surfaced_even_as_floor",
+                 "test_diversify_prolific_source_cannot_monopolize",
+                 "test_diversify_fewer_items_than_limit_no_crash",
                  "test_gate_thin_day_backfills_to_floor_end_to_end"]:
         globals()[name]()
         print(f"ok  {name}")
