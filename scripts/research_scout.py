@@ -2,7 +2,8 @@
 """research_scout.py — proactive research/announcement scout for the blogger.
 
 Daily one-shot. Discovers new AI/ML research (arXiv, Hugging Face Daily Papers)
-and big-lab announcements (OpenAI, Anthropic, Google/DeepMind), runs a FUNNEL —
+and big-lab announcements (OpenAI, Anthropic, Google, DeepMind, Meta, Mistral,
+Hugging Face, Microsoft Research), runs a FUNNEL —
 cheap signal prefilter, then a deep multi-agent gate (assessor + adversarial
 skeptic + deterministic judge) via headless `claude` (Max OAuth, no API key) —
 and writes the top 1-3 survivors to Firestore `researchCandidates` as
@@ -34,7 +35,8 @@ UA = {"User-Agent": "Mozilla/5.0 saiteja-research-scout"}
 ARXIV_CATS = ["cs.AI", "cs.LG", "cs.CL", "cs.CV"]
 LOOKBACK_DAYS = float(os.environ.get("SCOUT_LOOKBACK_DAYS", "2"))
 PAPER_FINALISTS = int(os.environ.get("SCOUT_PAPER_FINALISTS", "8"))
-ANN_FINALISTS = int(os.environ.get("SCOUT_ANN_FINALISTS", "5"))
+# 8 announcement sources feed the round-robin; 5 slots would drop 3 sources/day.
+ANN_FINALISTS = int(os.environ.get("SCOUT_ANN_FINALISTS", "8"))
 SKEPTIC_TOP = int(os.environ.get("SCOUT_SKEPTIC_TOP", "3"))
 MAX_RECS = int(os.environ.get("SCOUT_MAX_RECS", "3"))
 # Always surface at least this many picks for Sai to review. Threshold-first: bar-clearing
@@ -53,6 +55,11 @@ KW_CORE = ["agent", "agentic", "llm", "language model", "multi-agent", "tool use
 KW_ADJ = ["mlops", "databricks", "data pipeline", "feature store", "serving",
           "deployment", "production", "scalable", "latency", "throughput",
           "observability", "guardrail", "safety", "robustness", "dataset"]
+
+# Pure-AI publishers: everything they post is AI-relevant, so they skip the
+# keyword floor (which exists to drop non-AI posts from mixed publishers like
+# google/microsoft). Scrape sources (anthropic, meta) have no abstracts at all.
+AI_LABS = ("openai", "anthropic", "deepmind", "mistral", "meta", "huggingface")
 
 
 # ── Firestore ─────────────────────────────────────────────────────────────────
@@ -191,12 +198,38 @@ def src_anthropic() -> list[dict]:
     return out[:12]
 
 
+def src_meta() -> list[dict]:
+    """No RSS anywhere on ai.meta.com — best-effort parse of the blog index."""
+    out = []
+    try:
+        h = _get("https://ai.meta.com/blog/")
+    except Exception as e:
+        print(f"  meta: {e}"); return out
+    seen = set()
+    for m in re.finditer(r'href="https://ai\.meta\.com/blog/([a-z0-9\-]+)/?"', h):
+        slug = m.group(1)
+        if slug in seen:
+            continue
+        seen.add(slug)
+        out.append({"kind": "announcement", "source": "meta",
+                    "source_id": f"https://ai.meta.com/blog/{slug}/",
+                    "title": slug.replace("-", " ").title(),
+                    "url": f"https://ai.meta.com/blog/{slug}/",
+                    "abstract": "", "authors": [], "signals": {}})
+    return out[:12]
+
+
 def src_announcements() -> list[dict]:
     out = []
     out += _rss_items("https://openai.com/news/rss.xml", "openai")
     out += _rss_items("https://blog.google/technology/ai/rss/", "google")
-    out += _rss_items("https://deepmind.google/blog/rss.xml", "google")
+    out += _rss_items("https://deepmind.google/blog/rss.xml", "deepmind")
+    out += _rss_items("https://mistral.ai/rss.xml", "mistral")
+    out += _rss_items("https://huggingface.co/blog/feed.xml", "huggingface")
+    out += _rss_items("https://www.microsoft.com/en-us/research/feed/", "microsoft")
     out += src_anthropic()
+    out += src_meta()
+    # xAI: no RSS, and x.ai serves 403 to non-browser clients — no usable source.
     return out
 
 
@@ -277,9 +310,30 @@ def prefilter(cands: list[dict]) -> tuple[list[dict], list[dict]]:
                     key=lambda c: c["prefilterScore"], reverse=True)
     anns = sorted((c for c in cands if c["kind"] == "announcement"),
                   key=lambda c: c["prefilterScore"], reverse=True)
-    # announcements: require at least a little AI relevance so we skip non-AI google posts
-    anns = [a for a in anns if a["signals"]["keywordScore"] >= 1 or a["source"] in ("openai", "anthropic")]
-    return papers[:PAPER_FINALISTS], anns[:ANN_FINALISTS]
+    # announcements: require at least a little AI relevance so we skip non-AI
+    # posts from mixed publishers; pure-AI labs are exempt (see AI_LABS).
+    anns = [a for a in anns if a["signals"]["keywordScore"] >= 1 or a["source"] in AI_LABS]
+    return papers[:PAPER_FINALISTS], _diversify(anns, ANN_FINALISTS)
+
+
+def _diversify(ranked: list[dict], limit: int) -> list[dict]:
+    """Round-robin the per-source best. A global top-N let one prolific feed
+    (OpenAI posts ~15 rich-description items) monopolize every finalist slot,
+    while scrape sources with empty abstracts (anthropic/meta, keyword score 0)
+    lost every tie to fetch order — the scout looked OpenAI-only. Each source's
+    best item now reaches the deep gate, which judges significance for real."""
+    by_src: dict[str, list[dict]] = {}
+    for a in ranked:  # already sorted by prefilterScore desc
+        by_src.setdefault(a["source"], []).append(a)
+    order = sorted(by_src, key=lambda s: by_src[s][0]["prefilterScore"], reverse=True)
+    out: list[dict] = []
+    while len(out) < limit and any(by_src.values()):
+        for s in order:
+            if by_src[s]:
+                out.append(by_src[s].pop(0))
+                if len(out) >= limit:
+                    break
+    return out
 
 
 # ── deep gate (claude -p) ─────────────────────────────────────────────────────
