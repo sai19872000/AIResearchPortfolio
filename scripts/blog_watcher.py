@@ -193,32 +193,112 @@ def poll_once(db) -> int:
     return len(docs)
 
 
+# ── LinkedIn auth-outage handling ────────────────────────────────────────────
+# LinkedIn issues this app a ~60-day access token and NO refresh token, so it
+# WILL expire on a schedule only a human can reset (browser OAuth re-consent).
+# The Aug 2026 outage: every publish 401'd for a week, each burned the post's
+# 2 linkedinTries, and nothing alerted — silent failure on a delivery path.
+# Now: probe the token BEFORE attempting posts; an auth outage pauses posting
+# without consuming tries and pages Sai once (with the renewal command).
+LI_PROBE_EVERY_S = int(os.environ.get("LINKEDIN_PROBE_EVERY_S", "900"))
+LI_MIN_GAP_S = int(os.environ.get("LINKEDIN_AUTOPOST_MIN_GAP_S", "1800"))
+_li_state = {"down": False, "alerted": False, "last_probe": 0.0,
+             "probe_fails": 0, "last_post": 0.0}
+_LI_AUTH_SIG = ("EXPIRED_ACCESS_TOKEN", "REVOKED_ACCESS_TOKEN",
+                "INVALID_ACCESS_TOKEN", "invalid_grant", "HTTP 401",
+                "no LinkedIn token")
+_LI_RENEW_HINT = ("Renew: python3 scripts/linkedin_pipeline.py auth-url → open the "
+                  "URL, authorize, then `exchange <code>`. Queued posts auto-post "
+                  "once the token is back.")
+
+
+def _li_auth_error(text: str) -> bool:
+    return any(s in text for s in _LI_AUTH_SIG)
+
+
+def _li_token_ok(queued: int) -> bool:
+    """Preflight the LinkedIn token (whoami). During an outage, re-probe at most
+    every LI_PROBE_EVERY_S. Alerts once per outage; recovery note on restore."""
+    now = time.time()
+    if _li_state["down"] and now - _li_state["last_probe"] < LI_PROBE_EVERY_S:
+        return False
+    _li_state["last_probe"] = now
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "linkedin_pipeline.py"), "whoami"],
+                       cwd=str(ROOT), capture_output=True, text=True, timeout=90)
+    if r.returncode == 0:
+        if _li_state["down"]:
+            _alert_telegram("✅ LinkedIn token is valid again — queued blog posts "
+                            "will auto-post (one per "
+                            f"{LI_MIN_GAP_S // 60} min).")
+        _li_state.update(down=False, alerted=False, probe_fails=0)
+        return True
+    out = ((r.stderr or "") + (r.stdout or "")).strip()
+    _li_state["down"] = True
+    _li_state["probe_fails"] += 1
+    print(f"  ⏸ linkedin preflight failed ({_li_state['probe_fails']}): {out[-300:]}")
+    if not _li_state["alerted"]:
+        if _li_auth_error(out):
+            _alert_telegram(f"🔴 LinkedIn token expired/invalid — blog→LinkedIn "
+                            f"auto-post PAUSED ({queued} post(s) queued, tries NOT "
+                            f"burned). {_LI_RENEW_HINT}")
+            _li_state["alerted"] = True
+        elif _li_state["probe_fails"] >= 3:  # transient blips stay journal-only
+            _alert_telegram(f"🔴 LinkedIn preflight failing "
+                            f"({_li_state['probe_fails']} consecutive) — auto-post "
+                            f"paused, {queued} post(s) queued. Last: {out[-200:]}")
+            _li_state["alerted"] = True
+    return False
+
+
 def autopost_new_published(db) -> int:
     """Full-auto blog -> LinkedIn: post any PUBLISHED post that hasn't been
-    posted yet. Dedup on linkedinPostId; give up after 2 failed tries so a bad
-    token doesn't retry forever. Pre-automation posts were marked handled, so
-    only NEW publishes fire. Set LINKEDIN_AUTOPOST_DRY=1 to dry-run."""
+    posted yet. Dedup on linkedinPostId; give up after 2 failed tries so a
+    post-specific failure doesn't retry forever — but an AUTH outage never
+    consumes tries (preflight above). Backlog drains at most one post per
+    LI_MIN_GAP_S so a renewal doesn't flood the feed. Pre-automation posts
+    were marked handled, so only NEW publishes fire.
+    Set LINKEDIN_AUTOPOST_DRY=1 to dry-run."""
     from google.cloud.firestore_v1.base_query import FieldFilter
     site = os.environ.get("SITE_BASE_URL", "https://saiteja.ai")
     dry = os.environ.get("LINKEDIN_AUTOPOST_DRY") == "1"
-    posted = 0
+    cands = []
     for d in db.collection("blogPosts").where(filter=FieldFilter("published", "==", True)).stream():
         p = d.to_dict()
         if p.get("linkedinPostId") or (p.get("linkedinTries") or 0) >= 2:
             continue
+        cands.append((d, p))
+    if not cands:
+        return 0
+    if not dry and not _li_token_ok(len(cands)):
+        return 0  # auth outage: nothing attempted, no tries consumed
+    posted = 0
+    for d, p in cands:
+        if not dry and time.time() - _li_state["last_post"] < LI_MIN_GAP_S:
+            break  # feed pacing: at most one auto-post per gap
         slug = p["slug"]
-        d.reference.update({"linkedinTries": (p.get("linkedinTries") or 0) + 1})
+        tries = p.get("linkedinTries") or 0
+        d.reference.update({"linkedinTries": tries + 1})
         cmd = [sys.executable, str(ROOT / "scripts" / "linkedin_pipeline.py"), "publish", slug]
         if not dry:
             cmd.append("--publish")
         print(f"→ linkedin {'(dry) ' if dry else ''}auto-post: {slug}")
         r = subprocess.run(cmd, cwd=str(ROOT), env={**os.environ, "SITE_BASE_URL": site},
                            capture_output=True, text=True, timeout=240)
+        out = ((r.stderr or "") + (r.stdout or "")).strip()
         if r.returncode == 0 and (dry or "posted:" in r.stdout):
             print(f"  ✓ {'dry-ok' if dry else 'posted'}: {slug}")
             posted += 1
+            _li_state["last_post"] = time.time()
+        elif _li_auth_error(out):
+            # Token died between preflight and publish: nothing was posted with
+            # a dead token, so give the try back and stop until it's renewed.
+            d.reference.update({"linkedinTries": tries})
+            _li_state["down"] = True
+            print(f"  ⏸ linkedin auth failed mid-flight, try refunded: {slug}")
+            break
         else:
-            print(f"  ✗ linkedin failed {slug}: {(r.stderr or r.stdout)[-200:]}")
+            d.reference.update({"linkedinLastError": out[-300:]})
+            print(f"  ✗ linkedin failed {slug}: {out[-300:]}")
     return posted
 
 
