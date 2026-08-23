@@ -302,10 +302,24 @@ def _upload_image(access: str, owner: str, image: Path) -> str:
     return val["image"]  # urn:li:image:...
 
 
+def _post_content(images: list[tuple[str, str]]) -> dict | None:
+    """Posts-API content block from ordered (image_urn, alt_text) pairs:
+    single `media` for one image, `multiImage` for several (array order is
+    render order — the first image is the primary one in the feed)."""
+    if not images:
+        return None
+    if len(images) == 1:
+        urn, alt = images[0]
+        return {"media": {"id": urn, "altText": (alt or "")[:4000]}}
+    return {"multiImage": {"images": [
+        {"id": urn, "altText": (alt or "")[:4000]} for urn, alt in images]}}
+
+
 def _create_post(access: str, owner: str, commentary: str,
-                 image_urn: str | None = None, alt_text: str | None = None) -> str:
+                 images: list[tuple[str, str]] | None = None) -> str:
     """Create an organic member post via the Posts API. `commentary` must
-    already be little-escaped. Returns the post URN from the x-restli-id header."""
+    already be little-escaped; `images` is ordered (urn, alt) pairs. Returns
+    the post URN from the x-restli-id header."""
     body = {
         "author": owner,
         "commentary": commentary,
@@ -315,8 +329,9 @@ def _create_post(access: str, owner: str, commentary: str,
         "lifecycleState": "PUBLISHED",
         "isReshareDisabledByAuthor": False,
     }
-    if image_urn:
-        body["content"] = {"media": {"id": image_urn, "altText": (alt_text or "")[:4000]}}
+    content = _post_content(images or [])
+    if content:
+        body["content"] = content
     h = {**_li_headers(access), "Content-Type": "application/json"}
     _status, resp_headers, _raw = _send("POST", API + "/rest/posts",
                                         headers=h, body=json.dumps(body).encode())
@@ -342,60 +357,83 @@ def _delete_post(access: str, urn: str) -> None:
     _send("DELETE", API + "/rest/posts/" + urllib.parse.quote(urn, safe=""), headers=h)
 
 
-def _resolve_image(hero: str | None) -> Path | None:
-    """heroImage may be a GCS URL (download it) or a local /public path."""
-    if not hero:
+def _resolve_image(url: str | None) -> Path | None:
+    """An image ref may be a GCS URL (download it) or a local /public path.
+    Downloads get a URL-hashed tmp name so two refs sharing a basename can't
+    clobber each other."""
+    if not url:
         return None
-    if hero.startswith("http"):
+    if url.startswith("http"):
         try:
-            import tempfile
-            with urllib.request.urlopen(hero, timeout=30) as r:
+            import hashlib, tempfile
+            with urllib.request.urlopen(url, timeout=30) as r:
                 data = r.read()
-            tmp = Path(tempfile.gettempdir()) / f"li-hero-{Path(hero).name}"
+            tag = hashlib.sha1(url.encode()).hexdigest()[:8]
+            tmp = Path(tempfile.gettempdir()) / f"li-img-{tag}-{Path(url).name}"
             tmp.write_bytes(data)
             return tmp
         except Exception:
             return None
-    p = Path(__file__).resolve().parent.parent / "public" / hero.lstrip("/")
+    p = Path(__file__).resolve().parent.parent / "public" / url.lstrip("/")
     return p if p.exists() else None
 
 
-def _linkedin_image_url(post: dict) -> str | None:
-    """Prefer the post's first inline infographic (explains the idea) over the
-    abstract hero — better for the LinkedIn feed. Falls back to the hero."""
+def _linkedin_image_urls(post: dict) -> list[tuple[str, str]]:
+    """Ordered LinkedIn media as (label, url): the blog post's featured hero
+    image FIRST (the same image highlighted on the article page), then the
+    first inline infographic. Deduped; either slot may be absent. Order
+    matters — LinkedIn renders multiImage in array order, first = primary."""
     import re
+    out: list[tuple[str, str]] = []
+    hero = (post.get("heroImage") or "").strip()
+    if hero:
+        out.append(("featured image", hero))
     m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
-    return m.group(1) if m else post.get("heroImage")
+    if m and m.group(1) != hero:
+        out.append(("infographic", m.group(1)))
+    return out
 
 
 def cmd_publish(a):
     post = _load_post(a.slug)
     text = build_draft(post)
-    image = _resolve_image(_linkedin_image_url(post))
+    images: list[tuple[str, Path]] = []   # ordered (label, local path)
+    for label, url in _linkedin_image_urls(post):
+        p = _resolve_image(url)
+        if p:
+            images.append((label, p))
+        else:
+            print(f"  ({label} unavailable: {url})")
     print("─" * 60)
     print(text)
     print("─" * 60)
-    print(f"image: {image or '(none)'}")
+    if images:
+        for i, (label, p) in enumerate(images, 1):
+            print(f"image {i} ({label}): {p}")
+    else:
+        print("image: (none)")
 
     if not a.publish:
         print("\nDRY RUN — nothing posted. Sends a Telegram preview for approval.")
-        _tg_preview(text, image)
+        _tg_preview(text, images[0][1] if images else None)
         print("\nto actually post: add --publish")
         return
 
     # --- live publish (explicit human gate passed) ---
     access = _access_token()
     owner = _member_urn(access)
-    image_urn = None
-    if image:
+    uploaded: list[tuple[str, str]] = []  # ordered (image URN, alt text)
+    for label, img in images:
         try:
-            image_urn = _upload_image(access, owner, image)
+            uploaded.append((_upload_image(access, owner, img),
+                             f"{post['title']} — {label}"))
         except Exception as e:
-            # Non-fatal: post text + link; LinkedIn renders a preview card from
-            # the article's OG image instead of an attached image.
-            print(f"  image upload failed ({str(e)[:100]}); posting text-only")
-    post_urn = _create_post(access, owner, _escape_little(text),
-                            image_urn=image_urn, alt_text=post["title"])
+            # Non-fatal: keep whatever uploaded; with zero images LinkedIn
+            # renders a preview card from the article's OG image instead.
+            print(f"  {label} upload failed ({str(e)[:100]}); continuing")
+    if images and not uploaded:
+        print("  all image uploads failed; posting text-only")
+    post_urn = _create_post(access, owner, _escape_little(text), images=uploaded)
     print("posted:", post_urn)
     # Record on the post so we don't double-post and so `edit` can find it.
     # Store the UNescaped caption so edits/display work from clean text.
