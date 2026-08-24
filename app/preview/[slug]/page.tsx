@@ -48,9 +48,9 @@ export default async function PreviewPage({
         </div>
       </header>
 
-      {post.heroImage && (
+      {(post.sourceScreenshot || post.heroImage) && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={post.heroImage} alt="" className="mt-10 w-full" style={{ borderRadius: 'var(--radius-card)', border: '1px solid var(--line)' }} />
+        <img src={post.sourceScreenshot || post.heroImage!} alt="" className="mt-10 w-full" style={{ borderRadius: 'var(--radius-card)', border: '1px solid var(--line)' }} />
       )}
 
       <div className="mt-12" style={{ borderTop: '1px solid var(--line)', paddingTop: 48 }}>

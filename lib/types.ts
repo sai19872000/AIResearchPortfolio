@@ -19,6 +19,8 @@ export interface BlogPost {
   imageIds: string[]
   heroImage: string | null // Phase 2: nano-banana art, public path
   diagrams: Diagram[] // Phase 2
+  sourceUrl: string | null
+  sourceScreenshot: string | null // headless-Chrome capture of sourceUrl; the featured image when present
 }
 
 export interface Diagram {

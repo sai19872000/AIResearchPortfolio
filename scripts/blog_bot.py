@@ -173,8 +173,11 @@ def cmd_queue():
 
 # ---- approval notifications + callbacks ---------------------------------
 def _draft_image(post: dict) -> str | None:
+    featured = post.get("sourceScreenshot") or post.get("heroImage")
+    if featured:
+        return featured
     m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
-    return m.group(1) or post.get("heroImage")
+    return m.group(1) if m else None
 
 
 def _draft_card(p: dict) -> str:

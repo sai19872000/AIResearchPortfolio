@@ -379,17 +379,18 @@ def _resolve_image(url: str | None) -> Path | None:
 
 
 def _linkedin_image_urls(post: dict) -> list[tuple[str, str]]:
-    """Ordered LinkedIn media as (label, url): the blog post's featured hero
-    image FIRST (the same image highlighted on the article page), then the
+    """Ordered LinkedIn media as (label, url): the featured image FIRST (the
+    same image highlighted on the article page — a screenshot of the
+    original sourceUrl when captured, else the generated heroImage), then the
     first inline infographic. Deduped; either slot may be absent. Order
     matters — LinkedIn renders multiImage in array order, first = primary."""
     import re
     out: list[tuple[str, str]] = []
-    hero = (post.get("heroImage") or "").strip()
-    if hero:
-        out.append(("featured image", hero))
+    featured = (post.get("sourceScreenshot") or post.get("heroImage") or "").strip()
+    if featured:
+        out.append(("featured image", featured))
     m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
-    if m and m.group(1) != hero:
+    if m and m.group(1) != featured:
         out.append(("infographic", m.group(1)))
     return out
 
