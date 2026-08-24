@@ -24,7 +24,7 @@ export async function generateMetadata({
       title: post.title,
       description: post.summary || undefined,
       publishedTime: post.publishedAt || undefined,
-      images: post.heroImage ? [post.heroImage] : ['/art/og.png'],
+      images: post.sourceScreenshot || post.heroImage ? [post.sourceScreenshot || post.heroImage!] : ['/art/og.png'],
     },
   }
 }
@@ -55,9 +55,9 @@ export default async function PostPage({
         <div className="mt-6 flex flex-wrap gap-2">{post.tags.map((t) => <span key={t} className="au-chip">{t}</span>)}</div>
       </header>
 
-      {post.heroImage && (
+      {(post.sourceScreenshot || post.heroImage) && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={post.heroImage} alt="" className="mt-10 w-full" style={{ borderRadius: 'var(--radius-card)', border: '1px solid var(--line)' }} />
+        <img src={post.sourceScreenshot || post.heroImage!} alt="" className="mt-10 w-full" style={{ borderRadius: 'var(--radius-card)', border: '1px solid var(--line)' }} />
       )}
 
       <div className="mt-12" style={{ borderTop: '1px solid var(--line)', paddingTop: 48 }}>

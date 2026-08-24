@@ -129,6 +129,29 @@ def run_blogger(workdir: Path, slug: str) -> dict:
     return json.loads(out.read_text())
 
 
+def capture_source_screenshot(slug: str, url: str) -> str | None:
+    """Screenshot the post's ORIGINAL SOURCE page (scripts/capture_source.py)
+    for use as the featured image (blog + LinkedIn image #1). Returns the
+    ART_URL, or None on any failure — never raises, so a source-capture
+    problem doesn't fail the whole post (featured image falls back to
+    heroImage per the caller)."""
+    try:
+        r = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "capture_source.py"), slug, url],
+            capture_output=True, text=True, timeout=90,
+        )
+        m = re.search(r"^ART_URL:\s*(\S+)", r.stdout, re.M)
+        if m:
+            return m.group(1)
+    except Exception as e:
+        print(f"  ⚠️  LOUD: source screenshot FAILED for {slug} ({url}): {e} "
+              f"— featured image falls back to heroImage")
+        return None
+    print(f"  ⚠️  LOUD: source screenshot FAILED for {slug} ({url}): "
+          f"{((r.stdout or '') + (r.stderr or ''))[-300:]} — featured image falls back to heroImage")
+    return None
+
+
 def process(db, doc) -> None:
     req = doc.to_dict()
     print(f"▶ generating: {req['topic'][:70]}")
@@ -138,6 +161,9 @@ def process(db, doc) -> None:
         workdir = GENDIR / doc.id
         write_brief(workdir, req, slug)
         data = run_blogger(workdir, slug)
+        source_screenshot = None
+        if req.get("sourceUrl"):
+            source_screenshot = capture_source_screenshot(slug, req["sourceUrl"])
         now = _now()
 
         ref_ids = []
@@ -162,6 +188,7 @@ def process(db, doc) -> None:
             "heroImage": data.get("heroImage"), "diagrams": [],
             "generatedBy": "watcher", "genRequestId": doc.id,
             "sourceUrl": req.get("sourceUrl"), "kind": req.get("kind"),
+            "sourceScreenshot": source_screenshot,
         })
         doc.reference.update({"status": "ready", "resultSlug": slug, "error": None, "updatedAt": now})
         print(f"  ✓ draft ready: /admin/posts/{slug}")
