@@ -138,7 +138,9 @@ def capture_source_screenshot(slug: str, url: str) -> str | None:
     try:
         r = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "capture_source.py"), slug, url],
-            capture_output=True, text=True, timeout=90,
+            # capture_source retries once (2 x TIMEOUT_S=90 worst case) — an
+            # outer 90s would truncate the retry that beats a flaky CF challenge
+            capture_output=True, text=True, timeout=240,
         )
         m = re.search(r"^ART_URL:\s*(\S+)", r.stdout, re.M)
         if m:
