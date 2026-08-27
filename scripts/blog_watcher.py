@@ -72,14 +72,28 @@ def fetch_url_text(url: str, limit: int = 12000) -> str:
         return f"[could not fetch {url}: {e}]"
 
 
+def effective_source_url(req: dict) -> str | None:
+    """The request's original-source link. Scout requests carry an explicit
+    sourceUrl; a raw link pasted to the Telegram bot arrives as a URL-shaped
+    `topic` with no sourceUrl — but that post is ABOUT the URL, so the source
+    screenshot + source link must fire for it too (missed until 2026-08-27:
+    such posts silently fell back to heroImage on blog + LinkedIn)."""
+    if req.get("sourceUrl"):
+        return req["sourceUrl"]
+    topic = (req.get("topic") or "").strip()
+    if re.match(r"^https?://\S+$", topic):
+        return topic
+    return None
+
+
 def write_brief(workdir: Path, req: dict, slug: str) -> None:
     opts = req.get("options", {}) or {}
     length = {"short": "~600 words", "deep": "~1800 words"}.get(opts.get("length"), "~1000 words")
     head = [f"# Brief\n\nSLUG: {slug}\nTOPIC: {req['topic']}\nANGLE / NOTES: {req.get('angle') or '(none)'}"]
     if req.get("kind"):
         head.append(f"POST KIND: {req['kind']}")
-    if req.get("sourceUrl"):
-        head.append(f"ORIGINAL SOURCE LINK (you MUST link this in the post): {req['sourceUrl']}")
+    if effective_source_url(req):
+        head.append(f"ORIGINAL SOURCE LINK (you MUST link this in the post): {effective_source_url(req)}")
     parts = [
         "\n".join(head),
         f"TARGET LENGTH: {length}\nTONE: {opts.get('tone') or 'technical and plain'}",
@@ -164,8 +178,9 @@ def process(db, doc) -> None:
         write_brief(workdir, req, slug)
         data = run_blogger(workdir, slug)
         source_screenshot = None
-        if req.get("sourceUrl"):
-            source_screenshot = capture_source_screenshot(slug, req["sourceUrl"])
+        source_url = effective_source_url(req)
+        if source_url:
+            source_screenshot = capture_source_screenshot(slug, source_url)
         now = _now()
 
         ref_ids = []
@@ -189,7 +204,7 @@ def process(db, doc) -> None:
             "referenceIds": ref_ids, "imageIds": [],
             "heroImage": data.get("heroImage"), "diagrams": [],
             "generatedBy": "watcher", "genRequestId": doc.id,
-            "sourceUrl": req.get("sourceUrl"), "kind": req.get("kind"),
+            "sourceUrl": source_url, "kind": req.get("kind"),
             "sourceScreenshot": source_screenshot,
         })
         doc.reference.update({"status": "ready", "resultSlug": slug, "error": None, "updatedAt": now})
@@ -316,6 +331,12 @@ def autopost_new_published(db) -> int:
         out = ((r.stderr or "") + (r.stdout or "")).strip()
         if r.returncode == 0 and (dry or "posted:" in r.stdout):
             print(f"  ✓ {'dry-ok' if dry else 'posted'}: {slug}")
+            # Surface WHICH images the publish attached (and any that were
+            # unavailable/failed) — the swallowed stdout hid a wrong image 1
+            # for hours on 2026-08-27.
+            for line in r.stdout.splitlines():
+                if re.match(r"\s*(image \d+ \(|\(.*unavailable|.*upload failed|.*posting text-only)", line):
+                    print(f"    {line.strip()}")
             posted += 1
             _li_state["last_post"] = time.time()
         elif _li_auth_error(out):
