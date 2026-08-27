@@ -29,7 +29,7 @@ def _db():
 
 def capture(slug: str, url: str) -> str | None:
     r = subprocess.run([sys.executable, str(ROOT / "scripts" / "capture_source.py"), slug, url],
-                       capture_output=True, text=True, timeout=90)
+                       capture_output=True, text=True, timeout=240)
     m = re.search(r"^ART_URL:\s*(\S+)", r.stdout, re.M)
     if m:
         return m.group(1)
