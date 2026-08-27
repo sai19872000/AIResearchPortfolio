@@ -20,8 +20,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gen_art import upload_to_gcs, PUBLIC  # reuse the same GCS uploader/bucket
 
 CHROME = "/usr/bin/google-chrome"
-TIMEOUT_S = 45
+TIMEOUT_S = 90
 MIN_BYTES = 20_000
+ATTEMPTS = 2
+# Headless Chrome's default UA contains "HeadlessChrome" and exposes
+# navigator.webdriver — Cloudflare's bot challenge (openai.com et al.) never
+# clears, so the one-shot --screenshot captured the "Verifying..." interstitial
+# (~14KB, rejected by the size check → every OpenAI announcement lost its
+# source screenshot). A normal UA + AutomationControlled off lets the
+# challenge pass inside the virtual-time budget.
+UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
 
 def _png_dimensions(png: Path) -> tuple[int, int] | None:
@@ -46,14 +55,13 @@ def _distinct_colour_count(png: Path) -> int | None:
     return len(colours) if colours is not None else None
 
 
-def capture(slug: str, url: str) -> Path:
-    out = PUBLIC / "art" / "blog" / f"{slug}-source.png"
-    out.parent.mkdir(parents=True, exist_ok=True)
+def _capture_once(out: Path, url: str) -> None:
     if out.exists():
         out.unlink()
     cmd = [CHROME, "--headless=new", f"--screenshot={out}",
            "--window-size=1280,1024", "--hide-scrollbars",
-           "--virtual-time-budget=15000", url]
+           f"--user-agent={UA}", "--disable-blink-features=AutomationControlled",
+           "--virtual-time-budget=30000", url]
     r = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT_S)
     if r.returncode != 0 or not out.exists():
         raise RuntimeError(f"chrome screenshot failed (exit {r.returncode}): {(r.stderr or '')[-400:]}")
@@ -72,7 +80,20 @@ def capture(slug: str, url: str) -> Path:
         dims = _png_dimensions(out)
         if not dims or dims[0] < 200 or dims[1] < 200:
             raise RuntimeError(f"screenshot has no valid/sane PNG dimensions: {dims}")
-    return out
+
+
+def capture(slug: str, url: str) -> Path:
+    out = PUBLIC / "art" / "blog" / f"{slug}-source.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    last: Exception | None = None
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            _capture_once(out, url)
+            return out
+        except Exception as e:  # bot challenges are flaky — one bounded retry
+            last = e
+            print(f"attempt {attempt}/{ATTEMPTS} failed: {e}", file=sys.stderr)
+    raise RuntimeError(f"all {ATTEMPTS} attempts failed; last: {last}")
 
 
 def main() -> int:
