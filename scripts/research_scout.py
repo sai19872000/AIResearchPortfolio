@@ -484,6 +484,48 @@ def jev_shadow(c: dict) -> None:
         print(f"    jev shadow skipped: {type(e).__name__}: {str(e)[:100]}")
 
 
+JEV_LOG = GENDIR / "jev_shadow.jsonl"
+_JEV_CLAUDE_FIELDS = ("relevance", "quality", "importance", "novelty",
+                      "recommend", "confidence")
+
+
+def jev_log(assessed: list[dict], selected: list[dict]) -> None:
+    """Append one paired Claude-vs-Jev record per ASSESSED candidate.
+
+    write_recs only persists the <= MAX_RECS candidates _select_final returns,
+    but Jev is already called on every finalist inside gate() — up to
+    PAPER_FINALISTS + ANN_FINALISTS (16) a run. Logging only the survivors threw
+    away ~80% of a comparison already paid for, and the interesting rows are
+    exactly the disagreements on candidates that did NOT make the cut.
+
+    Records the skeptic fields too, because those run after assess() and are what
+    the drop rule actually reads. An abstention (jev=None) is logged as such — a
+    silent gap would look like agreement. Never raises."""
+    if os.environ.get("BLOG_JEV_SHADOW", "").strip() in ("", "0"):
+        return
+    try:
+        picked = {id(c) for c in selected}
+        JEV_LOG.parent.mkdir(parents=True, exist_ok=True)
+        with JEV_LOG.open("a") as fh:
+            for c in assessed:
+                v = c.get("verdict") or {}
+                fh.write(json.dumps({
+                    "ts": _now(),
+                    "cid": _cid(c["source_id"]),
+                    "title": c.get("title", "")[:200],
+                    "source": c.get("source"),
+                    "kind": c.get("kind"),
+                    "selected": id(c) in picked,
+                    "dropped_by_skeptic": bool(c.get("_drop")),
+                    "claude": {k: v.get(k) for k in _JEV_CLAUDE_FIELDS if k in v}
+                              | {"severity": (c.get("_skeptic") or {}).get("severity"),
+                                 "stillWorthIt": (c.get("_skeptic") or {}).get("stillWorthIt")},
+                    "jev": v.get("jev"),
+                }) + "\n")
+    except Exception as e:
+        print(f"    jev log skipped: {type(e).__name__}: {str(e)[:100]}")
+
+
 def _score(v: dict) -> float:
     return float(v.get("importance", 0)) * 0.6 + float(v.get("relevance", 0)) * 0.4
 
@@ -533,10 +575,13 @@ def gate(papers: list[dict], anns: list[dict]) -> list[dict]:
     for c in cleared_research[:SKEPTIC_TOP]:
         sk = skeptic(c, c["verdict"], GENDIR / _cid(c["source_id"]))
         c["verdict"]["watchOut"] = sk.get("caseAgainst", "")
+        c["_skeptic"] = sk        # off the verdict: not persisted, only compared
         if sk.get("severity") == "high" and not sk.get("stillWorthIt", True):
             c["_drop"] = True
             print(f"    skeptic dropped: {c['title'][:50]}")
-    return _select_final(assessed)
+    selected = _select_final(assessed)
+    jev_log(assessed, selected)   # every assessed candidate, not just the survivors
+    return selected
 
 
 # ── write recommendations ─────────────────────────────────────────────────────

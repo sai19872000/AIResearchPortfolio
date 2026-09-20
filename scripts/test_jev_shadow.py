@@ -196,6 +196,70 @@ rs.jev_shadow(c5)
 ok(json.dumps(c5["verdict"]).count("jev") >= 1,
    "the shadow is inside `verdict`, which write_recs persists to Firestore whole")
 
+# ── WIDENED SAMPLE: every assessed candidate is logged, not just the 2-3 picked ─
+# Jev is already called on all ~16 finalists (8 papers + 8 announcements) inside
+# gate(), but write_recs only persists the <=3 that _select_final returns. That
+# throws away 80% of a comparison we have already paid for. jev_log writes one
+# paired record per ASSESSED candidate.
+import tempfile  # noqa: E402
+
+os.environ["BLOG_JEV_SHADOW"] = "1"
+logdir = Path(tempfile.mkdtemp(prefix="jevlog-"))
+rs.JEV_LOG = logdir / "jev_shadow.jsonl"
+
+
+def _cand(n, score, rec, jev=True):
+    c = dict(CAND, title=f"cand-{n}", source_id=f"sid-{n}")
+    c["verdict"] = dict(VERDICT, importance=score, relevance=score)
+    if jev:
+        c["verdict"]["jev"] = {"relevance": 9.0, "importance": 9.0, "recommend": 0.9,
+                               "severity": "low", "stillWorthIt": 0.8}
+    c["_score"] = rs._score(c["verdict"])
+    c["_recommended"] = rec
+    return c
+
+
+assessed = [_cand(1, 9, True), _cand(2, 8, True), _cand(3, 2, False),
+            _cand(4, 1, False, jev=False)]
+selected = [assessed[0], assessed[1]]
+rs.jev_log(assessed, selected)
+
+lines = [json.loads(l) for l in rs.JEV_LOG.read_text().splitlines() if l.strip()]
+ok(len(lines) == 4,
+   f"one record per ASSESSED candidate, not per selected one ({len(lines)} of 4)")
+ok(sum(1 for r in lines if r["selected"]) == 2,
+   "each record says whether it was actually surfaced")
+r1 = next(r for r in lines if r["title"] == "cand-1")
+ok(r1["claude"]["importance"] == 9 and r1["jev"]["importance"] == 9.0,
+   f"both sides are in the same record, side by side ({r1['claude']}, {r1['jev']})")
+r4 = next(r for r in lines if r["title"] == "cand-4")
+ok(r4["jev"] is None,
+   "a candidate Jev abstained on is still logged, with jev=null — an abstention "
+   "is data too")
+ok(all("recommend" in r["claude"] and "severity" in r["jev"] for r in lines if r["jev"]),
+   "the recommend/severity fields the drop rule uses are captured on both sides")
+
+# appending across runs, not overwriting
+rs.jev_log(assessed[:1], [])
+lines2 = [l for l in rs.JEV_LOG.read_text().splitlines() if l.strip()]
+ok(len(lines2) == 5, f"the log APPENDS across runs ({len(lines2)})")
+
+# flag off -> nothing written
+os.environ.pop("BLOG_JEV_SHADOW", None)
+rs.JEV_LOG = logdir / "off.jsonl"
+rs.jev_log(assessed, selected)
+ok(not rs.JEV_LOG.exists(), "flag unset: no log file is created at all")
+
+# unwritable path must not raise into the tick
+os.environ["BLOG_JEV_SHADOW"] = "1"
+rs.JEV_LOG = Path("/proc/nope/cannot/write.jsonl")
+try:
+    rs.jev_log(assessed, selected)
+    ok(True, "an unwritable log path is swallowed, never raised into the scout tick")
+except Exception as exc:
+    ok(False, f"jev_log raised: {type(exc).__name__}: {exc}")
+os.environ.pop("BLOG_JEV_SHADOW", None)
+
 os.environ.pop("BLOG_JEV_SHADOW", None)
 print(f"\n{'PASS' if FAIL == 0 else 'FAIL'} test_jev_shadow  ({PASS} passed, {FAIL} failed)")
 sys.exit(1 if FAIL else 0)
