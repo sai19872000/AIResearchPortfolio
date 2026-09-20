@@ -420,6 +420,70 @@ def skeptic(c: dict, v: dict, wd: Path) -> dict:
         return {"caseAgainst": "", "severity": "low", "stillWorthIt": True}
 
 
+# ── Jev shadow scoring (opt-in: BLOG_JEV_SHADOW=1) ───────────────────────────
+# The assessor and skeptic above already reduce to typed fields, and each one
+# costs a headless claude-sonnet-5 run. Jev answers the same typed questions in
+# ONE batched call. This is SHADOW mode: the answers ride alongside the Claude
+# verdict for comparison and change no decision — _score, _recommended and the
+# skeptic drop rule all still read the Claude fields. Jev earns the seat on real
+# candidates first; the vendor's accuracy numbers are measured against their own
+# model-derived reference, not human labels.
+_JEV_SCALE = ["None", "Weak", "Fair", "Good", "Strong"]
+
+
+def _jev_specs() -> dict:
+    return {
+        "relevance":  {"type": "score", "criteria": _JEV_SCALE,
+                       "instructions": "Fit for a broad AI/ML practitioner audience."},
+        "quality":    {"type": "score", "criteria": _JEV_SCALE,
+                       "instructions": "Methodological soundness and evidence strength, "
+                                       "as far as the abstract shows."},
+        "importance": {"type": "score", "criteria": _JEV_SCALE,
+                       "instructions": "Would this matter to builders — novelty and impact."},
+        "novelty":    {"type": "score", "criteria": _JEV_SCALE,
+                       "instructions": "How new is this relative to prior work."},
+        "recommend":  {"type": "noul",
+                       "instructions": "Is this worth a post on a HIGH-bar technical "
+                                       "AI/ML blog? Most papers are incremental; default "
+                                       "to skepticism."},
+        "severity":   {"type": "choice",
+                       "criteria": {"low": "the case against it is minor",
+                                    "medium": "a real weakness a reader would notice",
+                                    "high": "overclaiming, cherry-picked evaluation, or "
+                                            "integrity concerns"},
+                       "instructions": "How damning is the strongest case AGAINST "
+                                       "featuring this?"},
+        "stillWorthIt": {"type": "noul",
+                         "instructions": "Even granting that weakness, is it still worth "
+                                         "featuring?"},
+    }
+
+
+def _jev_ask(state: str, specs: dict, **kw):
+    """Seam: jev_gate.ask. Returns {field: value} or None."""
+    import jev_gate
+    return jev_gate.ask(state, specs, **kw)
+
+
+def jev_shadow(c: dict) -> None:
+    """Attach Jev's typed answers at verdict['jev']. Never raises, never decides.
+
+    verdict is persisted whole by write_recs, so the shadow lands in Firestore
+    with the Claude verdict beside it — without that, an enabled run would pay
+    for Jev and record nothing to compare."""
+    if os.environ.get("BLOG_JEV_SHADOW", "").strip() in ("", "0"):
+        return
+    try:
+        state = (f"title: {c.get('title','')}\n"
+                 f"source: {c.get('source','')}\n"
+                 f"abstract: {(c.get('abstract') or '(none)')[:2500]}")
+        shadow = _jev_ask(state, _jev_specs())
+        if shadow:
+            c["verdict"]["jev"] = shadow
+    except Exception as e:
+        print(f"    jev shadow skipped: {type(e).__name__}: {str(e)[:100]}")
+
+
 def _score(v: dict) -> float:
     return float(v.get("importance", 0)) * 0.6 + float(v.get("relevance", 0)) * 0.4
 
@@ -458,6 +522,7 @@ def gate(papers: list[dict], anns: list[dict]) -> list[dict]:
         if not v:
             continue
         c["verdict"] = {**v, "whyItMatters": v.get("summary", ""), "watchOut": ""}
+        jev_shadow(c)          # advisory only; decides nothing below
         c["_score"] = _score(v)
         c["_recommended"] = bool(v.get("recommend"))
         assessed.append(c)
