@@ -27,3 +27,7 @@ public/art/blog/
 
 __pycache__/
 *.pyc
+
+# Scout-only venv: typesafe-sdk (Jev) + firestore, isolated from the shared
+# linuxbrew python3 that blog_watcher, blog_bot and auracle's listener all run on.
+.venv*
