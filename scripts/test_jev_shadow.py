@@ -196,6 +196,37 @@ rs.jev_shadow(c5)
 ok(json.dumps(c5["verdict"]).count("jev") >= 1,
    "the shadow is inside `verdict`, which write_recs persists to Firestore whole")
 
+# ── the scout uses TWO rubrics; the shadow must too ──────────────────────────
+# ASSESS_PAPER is a high bar on methodology; ASSESS_ANN says "the source is the
+# official lab, so authenticity is GIVEN — judge SIGNIFICANCE only". Backtesting
+# 176 human-labelled candidates showed one shared rubric scores announcements as
+# if they were papers: jev AUC 0.297 on announcements vs 0.573 on research, and
+# the mixed aggregate inverted to 0.37 purely from that (Simpson's paradox).
+ps = rs._jev_specs("research")
+an = rs._jev_specs("announcement")
+ok(ps != an, "the two kinds get DIFFERENT specs")
+ok("method" in json.dumps(ps).lower() or "sound" in json.dumps(ps).lower(),
+   "the research rubric still asks about methodology/soundness")
+blob = json.dumps(an).lower()
+ok("significance" in blob and ("authenticity" in blob or "official" in blob),
+   "the announcement rubric judges SIGNIFICANCE and grants authenticity")
+ok("method" not in blob and "sound" not in blob,
+   "the announcement rubric does NOT ask for methodological soundness")
+
+os.environ["BLOG_JEV_SHADOW"] = "1"
+seen_specs = []
+rs._jev_ask = lambda state, specs, **kw: (seen_specs.append(specs) or
+                                          {"relevance": 5.0, "importance": 5.0})
+a = dict(CAND, kind="announcement", verdict=dict(VERDICT))
+rs.jev_shadow(a)
+ok(seen_specs and seen_specs[-1] == an,
+   "an announcement candidate is scored with the ANNOUNCEMENT rubric")
+r = dict(CAND, kind="research", verdict=dict(VERDICT))
+rs.jev_shadow(r)
+ok(seen_specs and seen_specs[-1] == ps,
+   "a research candidate is scored with the RESEARCH rubric")
+os.environ.pop("BLOG_JEV_SHADOW", None)
+
 # ── WIDENED SAMPLE: every assessed candidate is logged, not just the 2-3 picked ─
 # Jev is already called on all ~16 finalists (8 papers + 8 announcements) inside
 # gate(), but write_recs only persists the <=3 that _select_final returns. That

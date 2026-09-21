@@ -431,7 +431,37 @@ def skeptic(c: dict, v: dict, wd: Path) -> dict:
 _JEV_SCALE = ["None", "Weak", "Fair", "Good", "Strong"]
 
 
-def _jev_specs() -> dict:
+_JEV_ANN_SCALE = ["Trivial", "Minor", "Notable", "Major", "Landmark"]
+
+
+def _jev_specs(kind: str = "research") -> dict:
+    """The rubric, per kind — mirroring ASSESS_PAPER vs ASSESS_ANN above.
+
+    Backtesting 176 human-labelled candidates (Sai's own accepted/skipped calls)
+    showed why this split is not cosmetic: scoring announcements on the PAPER
+    rubric gave an AUC of 0.297 against his decisions versus 0.573 on research,
+    and because announcements are ~88% accepted the mixed aggregate inverted to
+    0.37 — worse than a coin flip purely from Simpson's paradox. A big-lab model
+    release is thin *as a paper* and Jev scored it accordingly, while Sai posts
+    nearly all of them.
+    """
+    if kind == "announcement":
+        # ASSESS_ANN's contract: the source is the official lab, so authenticity
+        # is GIVEN. Judge significance only — never evidence or rigour.
+        return {
+            "relevance":  {"type": "score", "criteria": _JEV_ANN_SCALE,
+                           "instructions": "How much would a practitioner audience care "
+                                           "that this shipped?"},
+            "importance": {"type": "score", "criteria": _JEV_ANN_SCALE,
+                           "instructions": "This is an OFFICIAL announcement from a major "
+                                           "AI lab, so authenticity is GIVEN. Judge "
+                                           "SIGNIFICANCE only: how big a deal is this "
+                                           "release for people building with AI?"},
+            "recommend":  {"type": "noul",
+                           "instructions": "Is this a real, notable release worth an "
+                                           "'info' post on a technical AI blog, as "
+                                           "opposed to minor PR?"},
+        }
     return {
         "relevance":  {"type": "score", "criteria": _JEV_SCALE,
                        "instructions": "Fit for a broad AI/ML practitioner audience."},
@@ -477,7 +507,7 @@ def jev_shadow(c: dict) -> None:
         state = (f"title: {c.get('title','')}\n"
                  f"source: {c.get('source','')}\n"
                  f"abstract: {(c.get('abstract') or '(none)')[:2500]}")
-        shadow = _jev_ask(state, _jev_specs())
+        shadow = _jev_ask(state, _jev_specs(c.get("kind", "research")))
         if shadow:
             c["verdict"]["jev"] = shadow
     except Exception as e:
