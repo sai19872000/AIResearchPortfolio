@@ -28,7 +28,7 @@ PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
 DATABASE = os.environ.get("FIRESTORE_DATABASE_ID", "saiteja-site")
 ROOT = Path(__file__).resolve().parent.parent
 CLAUDE = os.environ.get("CLAUDE_BIN", "claude")
-SCOUT_MODEL = os.environ.get("SCOUT_GATE_MODEL", "claude-sonnet-5")  # pinned: see blog_watcher
+SCOUT_MODEL = os.environ.get("SCOUT_GATE_MODEL", "claude-sonnet-5-5")  # pinned: see blog_watcher
 GENDIR = ROOT / ".gen" / "scout"
 UA = {"User-Agent": "Mozilla/5.0 saiteja-research-scout"}
 
