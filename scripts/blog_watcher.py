@@ -32,7 +32,9 @@ CLAUDE = os.environ.get("CLAUDE_BIN", "claude")
 # this request with Fable 5"), and every generation died with exit 1
 # (requests ywQLZ93/hbyycqX, 07-04/05). Long-form writing is Sonnet-tier work;
 # never let a user-preference change silently re-model a production pipeline.
-WRITER_MODEL = os.environ.get("BLOG_WRITER_MODEL", "claude-sonnet-5")
+# 2026-10-02: Sonnet 5 -> Sonnet 5.5 (Sai), still an explicit pin. Needs Claude Code >= 2.1.284 (the first
+# CLI that catalogs claude-sonnet-5-5; older ones run it on fallback limits: 200k context, 32k output).
+WRITER_MODEL = os.environ.get("BLOG_WRITER_MODEL", "claude-sonnet-5-5")
 GENDIR = ROOT / ".gen"
 
 
