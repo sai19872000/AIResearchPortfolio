@@ -5,6 +5,9 @@ node_modules
 _legacy
 attached_assets
 docs
+tests
+playwright-report
+test-results
 scripts
 .claude
 *.md

@@ -43,6 +43,7 @@ Other env (see docs/LINKEDIN_SETUP.md):
 """
 from __future__ import annotations
 import argparse, json, os, subprocess, sys, urllib.parse, urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Use gcloud (owner) ADC, not a stray service-account key from another project.
@@ -186,6 +187,11 @@ def cmd_exchange(a):
         _store_secret("linkedin-access-token", at)
         days = int(tok.get("expires_in", 0)) // 86400
         print(f"access token stored in Secret Manager (valid ~{days} days)")
+        # Record WHEN it dies so the factory can warn at T-7d / T-1d instead of
+        # finding out from a failed post (the Aug 2026 outage).
+        exp = expiry_iso(int(tok.get("expires_in", 0)))
+        if exp and _store_secret(EXPIRY_SECRET, exp):
+            print(f"expiry recorded: {exp}")
     rt = tok.get("refresh_token")
     if rt:
         _store_secret("linkedin-refresh-token", rt)
@@ -193,6 +199,41 @@ def cmd_exchange(a):
     else:
         print("note: LinkedIn issued no refresh token for this app — re-run "
               "`auth-url` + `exchange` to renew when the access token expires (~60 days).")
+
+
+EXPIRY_SECRET = "linkedin-access-token-expires-at"
+WARN_DAYS = 7
+
+
+def expiry_iso(expires_in_s: int, now: datetime | None = None) -> str | None:
+    """ISO-8601 UTC instant the access token stops working (None if LinkedIn gave no TTL)."""
+    if not expires_in_s or expires_in_s <= 0:
+        return None
+    t = (now or datetime.now(timezone.utc)) + timedelta(seconds=expires_in_s)
+    return t.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def days_left(expires_at: str, now: datetime | None = None) -> float:
+    t = datetime.fromisoformat(expires_at.strip().replace("Z", "+00:00"))
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    return (t - (now or datetime.now(timezone.utc))).total_seconds() / 86400
+
+
+def cmd_token_status(_):
+    """Print the recorded access-token expiry. Exit 0 = healthy, 2 = expires in
+    <= 7 days or already expired, 3 = no expiry recorded. Machine-readable first line."""
+    raw = _maybe_secret(EXPIRY_SECRET, "LINKEDIN_ACCESS_TOKEN_EXPIRES_AT")
+    if not raw:
+        print("linkedin token expiry: unknown (token predates expiry tracking). Seed it: "
+              f"printf '<ISO-8601 UTC>' | gcloud secrets versions add {EXPIRY_SECRET} "
+              f"--project={FIRESTORE_PROJECT} --data-file=-")
+        sys.exit(3)
+    d = days_left(raw)
+    print(f"linkedin token expires_at={raw.strip()} days_left={d:.1f}")
+    if d <= WARN_DAYS:
+        print("RENEW SOON: python3 scripts/linkedin_pipeline.py auth-url -> authorize -> exchange <code>")
+        sys.exit(2)
 
 
 def _access_token() -> str:
@@ -486,6 +527,7 @@ def main():
     sub.add_parser("auth-url").set_defaults(fn=cmd_auth_url)
     ex = sub.add_parser("exchange"); ex.add_argument("code"); ex.set_defaults(fn=cmd_exchange)
     sub.add_parser("whoami").set_defaults(fn=cmd_whoami)
+    sub.add_parser("token-status", help="show the recorded access-token expiry (exit 2 if <=7d)").set_defaults(fn=cmd_token_status)
     dr = sub.add_parser("draft"); dr.add_argument("slug"); dr.set_defaults(fn=cmd_draft)
     pub = sub.add_parser("publish"); pub.add_argument("slug")
     pub.add_argument("--publish", action="store_true", help="actually post (default: dry run)")

@@ -23,6 +23,12 @@ export interface BlogPost {
   sourceScreenshot: string | null // headless-Chrome capture of sourceUrl; the featured image when present
 }
 
+/** The fields the blog index / sitemap need — no markdown body. */
+export type BlogPostSummary = Pick<
+  BlogPost,
+  'slug' | 'title' | 'summary' | 'tags' | 'publishedAt' | 'readTime' | 'updatedAt'
+>
+
 export interface Diagram {
   concept: string
   src: string // public path to rendered PNG

@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { getPost, getReferences } from '@/lib/firestore'
 import { Markdown } from '@/components/site/markdown'
 import { formatDate } from '@/lib/format'
+import { articleJsonLd, jsonLdString, postImage, postUrl } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,15 +17,19 @@ export async function generateMetadata({
   const { slug } = await params
   const post = await getPost(slug)
   if (!post) return { title: 'Not found' }
+  const image = post.sourceScreenshot || post.heroImage ? postImage(post) : '/art/og.png'
   return {
     title: post.title,
     description: post.summary || undefined,
+    alternates: { canonical: `/blog/${slug}` },
+    twitter: { card: 'summary_large_image', title: post.title, description: post.summary || undefined, images: [image] },
     openGraph: {
+      url: postUrl(slug),
       type: 'article',
       title: post.title,
       description: post.summary || undefined,
       publishedTime: post.publishedAt || undefined,
-      images: post.sourceScreenshot || post.heroImage ? [post.sourceScreenshot || post.heroImage!] : ['/art/og.png'],
+      images: [image],
     },
   }
 }
@@ -42,6 +47,7 @@ export default async function PostPage({
 
   return (
     <article className="mx-auto w-full px-6 pb-24 pt-32" style={{ maxWidth: 'var(--maxw-prose)' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(articleJsonLd(post)) }} />
       <Link className="link-arrow" href="/blog"><ArrowLeft size={14} /> Writing</Link>
 
       <header className="mt-10">

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { isAuthed } from '@/lib/auth'
-import { upsertPost, deletePost } from '@/lib/firestore'
+import { upsertPost, deletePost, POSTS_TAG } from '@/lib/firestore'
 import type { BlogPost } from '@/lib/types'
 
 export const runtime = 'nodejs'
@@ -20,6 +21,7 @@ export async function PUT(req: Request) {
   }
   const { slug: _s, ...rest } = body
   await upsertPost(slug, rest)
+  revalidateTag(POSTS_TAG, { expire: 0 }) // public index/sitemap reflect the edit now, not in 5 min
   return NextResponse.json({ ok: true, slug })
 }
 
@@ -28,5 +30,6 @@ export async function DELETE(req: Request) {
   const slug = new URL(req.url).searchParams.get('slug')
   if (!slug) return NextResponse.json({ error: 'slug required' }, { status: 422 })
   await deletePost(slug)
+  revalidateTag(POSTS_TAG, { expire: 0 })
   return NextResponse.json({ ok: true })
 }

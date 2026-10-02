@@ -22,6 +22,9 @@ import argparse, html, json, os, re, subprocess, sys, time, urllib.parse, urllib
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import heartbeat  # noqa: E402
+
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
 PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
@@ -337,10 +340,26 @@ def _diversify(ranked: list[dict], limit: int) -> list[dict]:
 
 
 # ── deep gate (claude -p) ─────────────────────────────────────────────────────
+SCOUT_SETTING_SOURCES = os.environ.get("SCOUT_SETTING_SOURCES", "project")
+
+
+def scout_argv(prompt: str, workdir: Path, model: str = SCOUT_MODEL) -> list[str]:
+    """argv for a scout agent. The prompt embeds third-party abstracts/titles, so
+    the session gets NO Bash and NO network tools: it may only Read/Write its own
+    workdir. (It used to get Bash(python3:*), i.e. arbitrary code from a feed.)"""
+    wd = workdir.resolve().as_posix().lstrip("/")
+    argv = [CLAUDE, "-p", prompt, "--model", model,
+            "--permission-mode", "dontAsk",
+            "--allowedTools", f"Read(//{wd}/**)", f"Write(//{wd}/**)", f"Edit(//{wd}/**)",
+            "--disallowedTools", "Bash", "WebFetch", "WebSearch"]
+    if SCOUT_SETTING_SOURCES:
+        argv += ["--setting-sources", SCOUT_SETTING_SOURCES]
+    return argv
+
+
 def _run_agent(prompt: str, workdir: Path, out_name: str, timeout: int = 300) -> dict:
     workdir.mkdir(parents=True, exist_ok=True)
-    allowed = ["Read", "Write", "Edit", "Glob", "Grep", "Bash(python:*)", "Bash(python3:*)"]
-    proc = subprocess.run([CLAUDE, "-p", prompt, "--model", SCOUT_MODEL, "--allowedTools", *allowed],
+    proc = subprocess.run(scout_argv(prompt, workdir),
                           cwd=str(ROOT), capture_output=True, text=True, timeout=timeout)
     out = workdir / out_name
     if not out.exists():
@@ -667,6 +686,13 @@ def main():
     print(f"→ {len(recs)} pick(s) for review "
           f"({len(recs) - floor_n} cleared the bar, {floor_n} floor backfill)")
     write_recs(db, recs, args.dry_run)
+    if not args.dry_run:
+        # n_recommendations == 0 with exit 0 is the silent-failure shape the
+        # factory could not see before: record it explicitly.
+        heartbeat.write(heartbeat.SCOUT_FILE, {
+            "last_run_at": heartbeat.now_iso(), "n_candidates": len(cands),
+            "n_finalists": len(papers) + len(anns), "n_recommendations": len(recs),
+            "n_below_bar": floor_n})
     print("done.")
 
 

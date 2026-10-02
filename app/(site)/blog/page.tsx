@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { listPosts } from '@/lib/firestore'
+import { listPostsPage } from '@/lib/firestore'
 import { Reveal } from '@/components/site/reveal'
 import { yearMonth } from '@/lib/format'
 
@@ -9,12 +9,18 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Writing',
+  alternates: { canonical: '/blog', types: { 'application/rss+xml': '/blog/feed.xml' } },
   description:
     'Notes on generative AI, agentic systems, research, and the engineering behind them — by Sai Teja Pusuluri.',
 }
 
-export default async function BlogIndex() {
-  const posts = await listPosts()
+export default async function BlogIndex({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
+  const sp = await searchParams
+  const { posts, page, pages, total } = await listPostsPage(parseInt(sp.page || '1', 10))
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 pb-24 pt-36">
@@ -27,7 +33,7 @@ export default async function BlogIndex() {
           Notes on AI, research, and the work.
         </h1>
         <p className="mt-5 measure" style={{ color: 'var(--text-muted)', fontSize: 19 }}>
-          {posts.length} pieces on generative and agentic systems, the research underneath, and what it
+          {total} pieces on generative and agentic systems, the research underneath, and what it
           takes to ship them.
         </p>
       </Reveal>
@@ -58,6 +64,18 @@ export default async function BlogIndex() {
             </Reveal>
           ))}
         </ol>
+      )}
+
+      {pages > 1 && (
+        <nav className="mt-12 flex items-center justify-between" aria-label="Pagination" style={{ borderTop: '1px solid var(--line)', paddingTop: 24 }}>
+          {page > 1 ? (
+            <Link className="link-arrow" rel="prev" href={page === 2 ? '/blog' : `/blog?page=${page - 1}`}>Newer</Link>
+          ) : <span />}
+          <span className="t-label" style={{ textTransform: 'none' }}>Page {page} of {pages}</span>
+          {page < pages ? (
+            <Link className="link-arrow" rel="next" href={`/blog?page=${page + 1}`}>Older <ArrowRight size={13} /></Link>
+          ) : <span />}
+        </nav>
       )}
     </div>
   )

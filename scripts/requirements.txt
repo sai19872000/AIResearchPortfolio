@@ -1,0 +1,7 @@
+# Python deps for scripts/ (blog_watcher, blog_bot, research_scout, linkedin_pipeline,
+# gen_art, capture_source). The scout runs in an isolated venv (see .gitignore) that
+# also needs typesafe-sdk (Jev), which is installed from the operator's index and is
+# intentionally not pinned here. Ranges, not pins: pip-audit reads this file in CI.
+google-cloud-firestore>=2.19,<3
+google-cloud-storage>=2.18,<4
+playwright>=1.50,<2

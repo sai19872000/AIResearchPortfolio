@@ -1,0 +1,56 @@
+# The factory merge gate requires a workflow named `ci` with a job named `suite`.
+# Everything here runs offline: SITE_FIXTURE=1 serves tests/fixtures, no Firestore needed.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      SITE_FIXTURE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Dependency audit (prod deps, high+)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Python syntax
+        run: python -m py_compile scripts/*.py
+      - name: Python tests
+        run: python scripts/run_tests.py
+      - name: Build
+        run: npm run build
+        env:
+          ADMIN_PASSWORD: ci-not-a-real-password
+          ADMIN_SESSION_SECRET: ci-not-a-real-secret
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E smoke (fixture mode)
+        run: npm run test:e2e
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/e2e-server.log || true

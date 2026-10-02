@@ -1,29 +1,37 @@
 import { NextResponse } from 'next/server'
 import { createContactMessage } from '@/lib/firestore'
+import { parseContact } from '@/lib/contact'
+import { clientIp } from '@/lib/clientip'
+import { hit, CONTACT_RULE } from '@/lib/ratelimit'
+import { rateStore } from '@/lib/ratelimit-store'
 
 export const runtime = 'nodejs'
 
 const CONTACT_TO = process.env.CONTACT_TO_EMAIL || 'hello@saiteja.ai'
 
 export async function POST(req: Request) {
-  let body: Record<string, string>
+  // Per-IP brake first (5/hour), before any parsing or writes.
+  const rl = await hit(rateStore(), CONTACT_RULE, clientIp(req.headers))
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'too many messages, try again later' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterS) } },
+    )
+  }
+
+  let body: Record<string, unknown>
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'invalid body' }, { status: 400 })
   }
 
-  const name = (body.name || '').toString().trim()
-  const email = (body.email || '').toString().trim()
-  const message = (body.message || '').toString().trim()
-  const subject = (body.subject || '').toString().trim() || 'website contact'
-
-  if (!name || !email || !message || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return NextResponse.json({ error: 'missing or invalid fields' }, { status: 422 })
+  const parsed = parseContact(body ?? {})
+  if (parsed.kind === 'bot') return NextResponse.json({ ok: true }) // look successful, store nothing
+  if (parsed.kind === 'invalid') {
+    return NextResponse.json({ error: parsed.error }, { status: 422 })
   }
-  if (message.length > 5000 || name.length > 200) {
-    return NextResponse.json({ error: 'too long' }, { status: 422 })
-  }
+  const { name, email, subject, message } = parsed.value
 
   // Persist first (source of truth), then best-effort email notify.
   await createContactMessage({ name, email, subject, message })

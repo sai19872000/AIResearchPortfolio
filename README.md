@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Testing & operations
+
+- `npm test` runs typecheck, unit tests and the Python tests; `npm run test:e2e` runs the Playwright
+  smoke in fixture mode (no Firestore needed). CI (`.github/workflows/ci.yml`) runs all of it.
+- `GET /api/health` reports the deployed git sha and Firestore status.
+- See [docs/OPERATIONS.md](docs/OPERATIONS.md) for deploy, rate-limit TTL, heartbeats and token expiry.

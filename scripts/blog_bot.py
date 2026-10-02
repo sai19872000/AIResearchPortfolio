@@ -364,6 +364,7 @@ def create_research_request(c: dict) -> str:
         else "A post about this paper"
     return _db().collection("blogGenRequests").add({
         "topic": f"{lead}: {c.get('title')}",
+        "title": c.get("title"),   # the watcher slugs from THIS, not the boilerplate lead
         "angle": (c.get("verdict") or {}).get("whyItMatters"),
         "referenceUrls": [c["url"]] if c.get("url") else [], "references": [], "options": {},
         "kind": kind, "sourceUrl": c.get("url"),
