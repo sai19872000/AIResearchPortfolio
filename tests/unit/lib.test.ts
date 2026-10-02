@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { clientIp } from '../../lib/clientip'
-import { CONTACT_RULE, LOGIN_FAIL_RULE, MemoryStore, blocked, hit } from '../../lib/ratelimit'
+import { CONTACT_RULE, LOGIN_FAIL_RULE, MemoryStore, blocked, hit, attemptLogin } from '../../lib/ratelimit'
 import { parseContact, MIN_FILL_MS } from '../../lib/contact'
 import { buildHealth } from '../../lib/health'
 import { buildRss, xmlEscape, postImage, jsonLdString, articleJsonLd } from '../../lib/seo'
@@ -73,4 +73,22 @@ test('postImage prefers the source screenshot, then hero, then the site image', 
 test('json-ld cannot break out of its script tag', () => {
   const s = jsonLdString(articleJsonLd({ slug: 's', title: '</script><b>', summary: null, publishedAt: null, updatedAt: null }))
   assert.ok(!s.includes('</script>'))
+})
+
+test('login: 20 concurrent bad guesses -> at most 5 reach checkPassword', async () => {
+  const s = new MemoryStore()
+  let checked = 0
+  const results = await Promise.all(
+    Array.from({ length: 20 }, () =>
+      attemptLogin(s, LOGIN_FAIL_RULE, 'atk', () => { checked++; return false }),
+    ),
+  )
+  assert.ok(checked <= 5, `checked=${checked}`)
+  assert.equal(results.filter((r) => r.status === 'limited').length, 15)
+})
+
+test('login: correct password refunds its slot', async () => {
+  const s = new MemoryStore()
+  for (let i = 0; i < 10; i++) assert.equal((await attemptLogin(s, LOGIN_FAIL_RULE, 'ok', () => true)).status, 'ok')
+  assert.equal((await attemptLogin(s, LOGIN_FAIL_RULE, 'ok', () => false)).status, 'wrong')
 })

@@ -1,5 +1,5 @@
 import 'server-only'
-import { Firestore, FieldValue } from '@google-cloud/firestore'
+import { Firestore } from '@google-cloud/firestore'
 import { MemoryStore, type RateStore } from './ratelimit'
 
 // Firestore-backed fixed-window counters at rateLimits/{key}. Each doc carries an
@@ -11,8 +11,13 @@ class FirestoreStore implements RateStore {
   constructor(private db: Firestore) {}
   async incr(key: string, windowEndsAt: number, by: number) {
     const ref = this.db.collection('rateLimits').doc(key)
-    await ref.set({ n: FieldValue.increment(by), expireAt: new Date(windowEndsAt + 24 * 3600 * 1000) }, { merge: true })
-    return ((await ref.get()).data()?.n as number) ?? by
+    // Transaction: read-modify-write is atomic, so concurrent callers get distinct counts.
+    return this.db.runTransaction(async (tx) => {
+      const cur = ((await tx.get(ref)).data()?.n as number) ?? 0
+      const n = cur + by
+      tx.set(ref, { n, expireAt: new Date(windowEndsAt + 24 * 3600 * 1000) }, { merge: true })
+      return n
+    })
   }
   async peek(key: string) {
     return ((await this.db.collection('rateLimits').doc(key).get()).data()?.n as number) ?? 0

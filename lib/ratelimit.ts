@@ -40,6 +40,38 @@ export async function blocked(store: RateStore, rule: RateRule, ip: string, now 
   return { blocked: count >= rule.limit, count, retryAfterS: Math.max(1, Math.ceil((windowEndsAt - now) / 1000)) }
 }
 
+/** Give back one previously counted event (e.g. a successful login that was pre-counted). */
+export async function refund(store: RateStore, rule: RateRule, ip: string, now = Date.now()) {
+  const { key, windowEndsAt } = bucketKey(rule, ip, now)
+  await store.incr(key, windowEndsAt, -1)
+}
+
+export type LoginAttempt =
+  | { status: 'limited'; retryAfterS: number }
+  | { status: 'ok' }
+  | { status: 'wrong' }
+
+/**
+ * Count the attempt BEFORE checking the password so the increment is atomic with the
+ * admission decision: N concurrent guesses can no longer all observe count 0. A correct
+ * password refunds its slot, so only failures consume the budget.
+ */
+export async function attemptLogin(
+  store: RateStore,
+  rule: RateRule,
+  ip: string,
+  check: () => boolean,
+  now = Date.now(),
+): Promise<LoginAttempt> {
+  const h = await hit(store, rule, ip, now)
+  if (!h.allowed) return { status: 'limited', retryAfterS: h.retryAfterS }
+  if (check()) {
+    await refund(store, rule, ip, now)
+    return { status: 'ok' }
+  }
+  return { status: 'wrong' }
+}
+
 export class MemoryStore implements RateStore {
   private m = new Map<string, { n: number; exp: number }>()
   async incr(key: string, windowEndsAt: number, by: number) {

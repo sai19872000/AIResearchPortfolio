@@ -14,7 +14,7 @@ Usage:
 Requires: /home/sai/auracle/bin/genimage on disk (the agy/Ultra renderer).
 """
 from __future__ import annotations
-import os, subprocess, sys
+import os, re, subprocess, sys
 from pathlib import Path
 
 GENIMAGE = "/home/sai/auracle/bin/genimage"
@@ -22,6 +22,19 @@ PUBLIC = Path(__file__).resolve().parent.parent / "public"
 ART_DIR = PUBLIC / "art"
 GCS_BUCKET = os.environ.get("SAITEJA_ART_BUCKET", "saiteja-blog-art")
 GCS_PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
+
+
+SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,80}$")
+
+
+def blog_out_path(slug: str, kind: str) -> Path | None:
+    """Validated output path for a post's art, or None if the slug is unsafe."""
+    if not SLUG_RE.fullmatch(slug):
+        return None
+    out = ART_DIR / "blog" / f"{slug}-{kind}.png"
+    if not out.resolve().is_relative_to(ART_DIR.resolve()):
+        return None
+    return out
 
 
 def upload_to_gcs(local: Path) -> str | None:
@@ -106,7 +119,10 @@ def main() -> int:
             print(f"usage: gen_art.py {kind} <slug> \"<concept>\"")
             return 2
         slug, concept = sys.argv[2], sys.argv[3]
-        out = ART_DIR / "blog" / f"{slug}-{kind}.png"
+        out = blog_out_path(slug, kind)
+        if out is None:
+            print(f"invalid slug: {slug!r} (must match {SLUG_RE.pattern})")
+            return 2
         return render(PROMPTS[kind].format(concept=concept), out)
     print(f"unknown kind: {kind}")
     return 2
