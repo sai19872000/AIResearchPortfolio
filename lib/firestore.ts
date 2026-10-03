@@ -1,6 +1,29 @@
 import 'server-only'
+import fs from 'node:fs'
+import path from 'node:path'
+import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { Firestore } from '@google-cloud/firestore'
-import type { BlogPost, BlogGenRequest, Portfolio, Reference } from './types'
+import type { BlogPost, BlogPostSummary, BlogGenRequest, Portfolio, Reference } from './types'
+
+// Fixture mode (CI + e2e only): SITE_FIXTURE=1 serves portfolio-content.json and
+// tests/fixtures/posts.json instead of Firestore, so `next start` runs hermetically.
+// Never set in production (scripts/deploy.sh does not pass it).
+const FIXTURE = process.env.SITE_FIXTURE === '1'
+const fixtureContacts: unknown[] = []
+
+function fixtureJson<T>(rel: string): T {
+  return JSON.parse(fs.readFileSync(path.join(/*turbopackIgnore: true*/ process.cwd(), rel), 'utf8')) as T
+}
+function fixturePosts(): BlogPost[] {
+  return fixtureJson<BlogPost[]>('tests/fixtures/posts.json')
+}
+
+/** Cached-read window for public blog data (seconds). Posts are also published
+ * straight in Firestore by the Telegram bot, so a time-based window (not only
+ * revalidateTag from the admin route) is what bounds staleness. */
+export const POSTS_REVALIDATE_S = 300
+export const POSTS_TAG = 'posts'
 
 // Pinned to the named Firestore database created for this site.
 // Auth: Application Default Credentials (Cloud Run runtime SA in prod;
@@ -26,6 +49,7 @@ function db(): Firestore {
 }
 
 export async function getPortfolio(): Promise<Portfolio> {
+  if (FIXTURE) return fixtureJson<Portfolio>('portfolio-content.json')
   const snap = await db().collection('portfolio').doc('main').get()
   if (!snap.exists) throw new Error('portfolio/main missing in Firestore')
   return snap.data() as Portfolio
@@ -35,21 +59,80 @@ function toPost(data: FirebaseFirestore.DocumentData): BlogPost {
   return data as BlogPost
 }
 
-/** Published posts, newest first. */
-export async function listPosts(opts?: { includeDrafts?: boolean }): Promise<BlogPost[]> {
-  const snap = await db().collection('blogPosts').get()
-  const posts = snap.docs.map((d) => toPost(d.data()))
-  const filtered = opts?.includeDrafts ? posts : posts.filter((p) => p.published)
-  return filtered.sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
+const SUMMARY_FIELDS = ['slug', 'title', 'summary', 'tags', 'publishedAt', 'readTime', 'updatedAt'] as const
+
+function toSummary(p: Partial<BlogPost>): BlogPostSummary {
+  return {
+    slug: p.slug as string,
+    title: p.title as string,
+    summary: p.summary ?? null,
+    tags: p.tags ?? [],
+    publishedAt: p.publishedAt ?? null,
+    readTime: p.readTime ?? null,
+    updatedAt: p.updatedAt ?? null,
+  }
 }
 
-export async function getPost(slug: string): Promise<BlogPost | null> {
+function newestFirst(a: BlogPostSummary, b: BlogPostSummary): number {
+  return (b.publishedAt || '').localeCompare(a.publishedAt || '')
+}
+
+async function readPublishedSummaries(): Promise<BlogPostSummary[]> {
+  if (FIXTURE) return fixturePosts().filter((p) => p.published).map(toSummary).sort(newestFirst)
+  // Server-side filter + field projection: no full markdown bodies over the wire.
+  const snap = await db()
+    .collection('blogPosts')
+    .where('published', '==', true)
+    .select(...SUMMARY_FIELDS)
+    .get()
+  return snap.docs.map((d) => toSummary(d.data() as Partial<BlogPost>)).sort(newestFirst)
+}
+
+const cachedPublishedSummaries = unstable_cache(readPublishedSummaries, ['published-summaries'], {
+  revalidate: POSTS_REVALIDATE_S,
+  tags: [POSTS_TAG],
+})
+
+/** Published posts (summary fields only), newest first. Cached for POSTS_REVALIDATE_S. */
+export async function listPosts(): Promise<BlogPostSummary[]> {
+  return cachedPublishedSummaries()
+}
+
+export const BLOG_PAGE_SIZE = 30
+
+/** One page of the blog index. `page` is 1-based and clamped into range. */
+export async function listPostsPage(
+  page: number,
+  pageSize = BLOG_PAGE_SIZE,
+): Promise<{ posts: BlogPostSummary[]; page: number; pages: number; total: number }> {
+  const all = await listPosts()
+  const pages = Math.max(1, Math.ceil(all.length / pageSize))
+  const p = Math.min(Math.max(1, Math.floor(page) || 1), pages)
+  return { posts: all.slice((p - 1) * pageSize, p * pageSize), page: p, pages, total: all.length }
+}
+
+/** Latest published posts including the body, for the RSS feed. */
+export async function listLatestFull(limit = 50): Promise<BlogPost[]> {
+  if (FIXTURE) {
+    return fixturePosts()
+      .filter((p) => p.published)
+      .sort((a, b) => (b.publishedAt || '').localeCompare(a.publishedAt || ''))
+      .slice(0, limit)
+  }
+  const slugs = (await listPosts()).slice(0, limit).map((p) => p.slug)
+  const docs = await Promise.all(slugs.map((s) => db().collection('blogPosts').doc(s).get()))
+  return docs.filter((d) => d.exists).map((d) => toPost(d.data()!))
+}
+
+// React cache(): generateMetadata and the page render share ONE read per request.
+export const getPost = cache(async (slug: string): Promise<BlogPost | null> => {
+  if (FIXTURE) return fixturePosts().find((p) => p.slug === slug) ?? null
   const snap = await db().collection('blogPosts').doc(slug).get()
   return snap.exists ? toPost(snap.data()!) : null
-}
+})
 
 export async function getReferences(ids: string[]): Promise<Reference[]> {
-  if (!ids.length) return []
+  if (!ids.length || FIXTURE) return []
   const refs = await Promise.all(
     ids.map((id) => db().collection('references').doc(id).get()),
   )
@@ -57,8 +140,34 @@ export async function getReferences(ids: string[]): Promise<Reference[]> {
 }
 
 export async function allSlugs(): Promise<string[]> {
-  const snap = await db().collection('blogPosts').where('published', '==', true).get()
-  return snap.docs.map((d) => (d.data() as BlogPost).slug)
+  return (await listPosts()).map((p) => p.slug)
+}
+
+/** Sitemap source: every published post with its dates. */
+export async function listPublishedForSitemap(): Promise<
+  { slug: string; publishedAt: string | null; updatedAt: string | null }[]
+> {
+  return (await listPosts()).map((p) => ({ slug: p.slug, publishedAt: p.publishedAt, updatedAt: p.updatedAt }))
+}
+
+export interface HealthProbe {
+  firestore_ok: boolean
+  published_count: number | null
+  latest_published_at: string | null
+}
+
+/** Cheap liveness + data probe for /api/health (cached 60s by the route). */
+export async function probeHealth(): Promise<HealthProbe> {
+  try {
+    const posts = await readPublishedSummaries() // uncached on purpose: a real read
+    return {
+      firestore_ok: true,
+      published_count: posts.length,
+      latest_published_at: posts[0]?.publishedAt ?? null,
+    }
+  } catch {
+    return { firestore_ok: false, published_count: null, latest_published_at: null }
+  }
 }
 
 export async function createContactMessage(msg: {
@@ -67,6 +176,10 @@ export async function createContactMessage(msg: {
   subject?: string
   message: string
 }): Promise<void> {
+  if (FIXTURE) {
+    fixtureContacts.push({ ...msg, createdAt: new Date().toISOString() })
+    return
+  }
   await db().collection('contactMessages').add({
     ...msg,
     createdAt: new Date().toISOString(),
