@@ -111,3 +111,45 @@ def test_linkedin_expiry_math():
     assert li.expiry_iso(0) is None
     assert abs(li.days_left(iso, now) - 60) < 1e-6
     assert li.days_left("2026-09-30T00:00:00Z", now) < 0
+
+
+def _paper_req(**kw):
+    return {"topic": "A post about this paper: Where-OPD", "kind": "research",
+            "sourceUrl": "https://arxiv.org/abs/2610.02117", "referenceUrls": ["https://arxiv.org/abs/2610.02117"], **kw}
+
+
+def test_write_brief_uses_full_paper_text(monkeypatch, tmp_path):
+    """Issue #28: the brief carries the paper (arXiv HTML), fenced as untrusted, not the abstract page."""
+    import paper_source as ps
+    paper = "Section 3 Method. " * 800
+    monkeypatch.setattr(ps, "fetch_paper", lambda u, f, **k: (paper, "https://arxiv.org/html/2610.02117", False))
+    bw.write_brief(tmp_path, _paper_req(), "slug")
+    brief = (tmp_path / "brief.md").read_text()
+    assert "url=https://arxiv.org/html/2610.02117 (full paper text)" in brief
+    assert "Section 3 Method." in brief and "<<<BEGIN UNTRUSTED SOURCE TEXT" in brief
+
+
+def test_research_post_from_abstract_only_is_refused(monkeypatch, tmp_path):
+    import paper_source as ps
+    monkeypatch.setattr(ps, "fetch_paper", lambda u, f, **k: ("Abstract only.", u, True))
+    try:
+        bw.write_brief(tmp_path, _paper_req(), "slug")
+        assert False, "expected the research post to be refused"
+    except RuntimeError as e:
+        assert "issue #28" in str(e) and "abstract" in str(e)
+
+
+def test_non_research_abstract_only_is_labelled_not_refused(monkeypatch, tmp_path):
+    import paper_source as ps
+    monkeypatch.setattr(ps, "fetch_paper", lambda u, f, **k: ("Abstract only.", u, True))
+    bw.write_brief(tmp_path, _paper_req(kind="announcement"), "slug")
+    assert "ABSTRACT ONLY" in (tmp_path / "brief.md").read_text()
+
+
+def test_source_url_is_fetched_even_when_not_listed(monkeypatch, tmp_path):
+    import paper_source as ps
+    seen = []
+    monkeypatch.setattr(ps, "fetch_paper", lambda u, f, **k: (seen.append(u) or "x" * 9000, u, False))
+    bw.write_brief(tmp_path, {"topic": "t", "kind": "announcement", "sourceUrl": "https://openai.com/index/x",
+                              "referenceUrls": []}, "slug")
+    assert seen == ["https://openai.com/index/x"]
