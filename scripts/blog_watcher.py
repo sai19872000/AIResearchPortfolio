@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import heartbeat  # noqa: E402
+import paper_source  # noqa: E402  (issue #28: full paper text for research posts)
 
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
@@ -159,8 +160,20 @@ def write_brief(workdir: Path, req: dict, slug: str) -> None:
         "\n## Sources (cite where relevant; do not fabricate)\n\n" + UNTRUSTED_NOTE + "\n",
     ]
     srcs = []
-    for u in req.get("referenceUrls", []):
-        srcs.append(fence_untrusted(f"url={u}", fetch_url_text(u)))
+    source = effective_source_url(req)
+    urls = list(req.get("referenceUrls", []))
+    if source and source not in urls:
+        urls.insert(0, source)                   # the post's own source was never fetched unless also listed (issue #28)
+    for u in urls:
+        text, used, abstract_only = paper_source.fetch_paper(u, fetch_url_text)
+        if abstract_only and u == source and req.get("kind") == "research":
+            # Policy (issue #28): never write a research post from the abstract alone. Fail the request loudly.
+            raise RuntimeError(f"full text unavailable for {u} (only the arXiv abstract could be fetched): "
+                               "skipping this research post rather than writing it from the abstract (issue #28)")
+        note = ("full paper text" if paper_source.arxiv_id(u) and not abstract_only else
+                "ABSTRACT ONLY: the full paper could not be fetched; say so and claim nothing beyond it"
+                if abstract_only else "")
+        srcs.append(fence_untrusted(f"url={used}" + (f" ({note})" if note else ""), text))
     for r in req.get("references", []):
         srcs.append(fence_untrusted(f"pdf={r.get('title') or 'uploaded.pdf'}", (r.get('text') or '')[:12000]))
     parts.append("\n\n".join(srcs) if srcs else "(no external sources provided)")
