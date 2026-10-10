@@ -4,7 +4,8 @@ import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 
 const BASE = process.env.E2E_BASE_URL || 'http://127.0.0.1:3100'
-const browser = await chromium.launch()
+// E2E_CHROMIUM: use an already-installed Chromium (offline CI hosts cannot download one).
+const browser = await chromium.launch(process.env.E2E_CHROMIUM ? { executablePath: process.env.E2E_CHROMIUM } : {})
 const results = []
 async function check(name, fn) {
   const ctx = await browser.newContext()
