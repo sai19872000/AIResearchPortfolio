@@ -1,6 +1,6 @@
 ---
 name: blog-art
-description: Generate on-brand (Auracle) art for a saiteja.ai blog post — a hero image plus inline infographics — with nano-banana (Gemini 3 Pro Image, $0 on the Ultra sub). Use this while writing any blog post: every post gets a hero; add an infographic wherever a concept is better shown than told.
+description: Generate on-brand (Auracle) art for a saiteja.ai blog post — a hero image plus inline infographics — with nano-banana (agy on the Ultra sub, $0; Google assigns the model, Nano Banana 2 as of 2026-10). Use this while writing any blog post: every post gets a hero; add an infographic wherever a concept is better shown than told.
 ---
 
 # blog-art — visuals for the blog

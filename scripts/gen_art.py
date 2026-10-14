@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Generate on-brand (Aura) art for saiteja.ai via nano-banana (Gemini 3 Pro
-Image) through Auracle's genimage CLI — no API cost, runs on the Ultra sub.
+"""Generate on-brand (Aura) art for saiteja.ai via nano-banana (agy; Google assigns
+the model, Nano Banana 2 as of 2026-10, not Pro) through Auracle's genimage CLI —
+no API cost, runs on the Ultra sub.
 
 Bakes the Aura palette + "quietly forged" restraint into every prompt so art
 stays on-brand. Outputs PNGs into public/art/ (bundled with the site, never
