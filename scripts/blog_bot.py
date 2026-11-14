@@ -15,6 +15,11 @@ from __future__ import annotations
 import hashlib, hmac, html, json, os, re, subprocess, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 
+try:
+    import knowledge
+except Exception:
+    knowledge = None
+
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 PROJECT = os.environ.get("FIRESTORE_PROJECT_ID", "auracle-prod-311")
 DATABASE = os.environ.get("FIRESTORE_DATABASE_ID", "saiteja-site")
@@ -180,14 +185,18 @@ def _draft_image(post: dict) -> str | None:
     return m.group(1) if m else None
 
 
+_PRIVACY_LINE = "⚠️ possible private text - check the draft\n"
+
+
 def _draft_card(p: dict) -> str:
     """Approval-card text. Field caps keep the photo-CAPTION form safely under
     Telegram's 1024-char limit *with the trailing <a> tag intact* — slicing a
     long caption mid-tag makes Telegram reject the whole HTML caption (that
     silently dropped a draft once: long post → 1079-char caption → 400)."""
     cap = (p.get("linkedinPost") or p.get("summary") or "").strip()
+    warn = _PRIVACY_LINE if p.get("privacyFlag") is True else ""
     return (f"📝 <b>{html.escape(p['title'][:140])}</b>\n\n"
-            f"{html.escape((p.get('summary') or '')[:200])}\n\n"
+            f"{html.escape((p.get('summary') or '')[:200])}\n\n{warn}"
             f"<i>LinkedIn caption:</i>\n{html.escape(cap[:360])}\n\n"
             f"📖 <a href=\"{preview_url(p['slug'])}\">read the full draft</a>\n"
             "↩️ reply to this message to rewrite the caption")
@@ -282,6 +291,12 @@ def handle_callback(cb: dict, db):
             doc.reference.update({"published": True, "publishedAt": _now(), "updatedAt": _now()})
             tg("answerCallbackQuery", callback_query_id=cid, text="published ✓")
             _edit_status(mid, p, "✅ <b>Published</b> — posting to LinkedIn shortly.")
+            if p.get("privacyFlag") is not True:
+                try:
+                    if knowledge is not None:
+                        knowledge.publish_entry(p["slug"], p["title"], p.get("summary"), p.get("tags") or [], p.get("sourceUrl") or "", _now())
+                except Exception:
+                    pass
     elif action == "r":
         doc.reference.delete()
         tg("answerCallbackQuery", callback_query_id=cid, text="rejected")

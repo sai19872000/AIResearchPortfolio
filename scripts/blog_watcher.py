@@ -23,6 +23,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import heartbeat  # noqa: E402
 import paper_source  # noqa: E402  (issue #28: full paper text for research posts)
+try:
+    import knowledge  # noqa: E402
+except Exception:
+    knowledge = None
 
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
@@ -177,8 +181,33 @@ def write_brief(workdir: Path, req: dict, slug: str) -> None:
     for r in req.get("references", []):
         srcs.append(fence_untrusted(f"pdf={r.get('title') or 'uploaded.pdf'}", (r.get('text') or '')[:12000]))
     parts.append("\n\n".join(srcs) if srcs else "(no external sources provided)")
+    corpus = ""
+    try:
+        if knowledge is not None:
+            pub, priv, corpus = knowledge.recall_blocks_ex((req.get("topic") or "") + " " + (req.get("angle") or ""))
+            if pub:
+                parts.append("\n## Public background (may be used)\n\n" + fence_untrusted("knowledge=public", pub))
+            if priv:
+                parts.append("\n<!--KNOWLEDGE-PRIVATE-BEGIN-->\n## Private background (NOT quotable; do not copy sentences into the post)\n\n"
+                             + fence_untrusted("knowledge=private", priv) + "\n<!--KNOWLEDGE-PRIVATE-END-->")
+    except Exception:
+        corpus = ""
     workdir.mkdir(parents=True, exist_ok=True)
     (workdir / "brief.md").write_text("\n".join(parts))
+    try:
+        if knowledge is not None:
+            pf = workdir / "private_background.txt"
+            if corpus:
+                fd = os.open(str(pf), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                try:
+                    os.fchmod(fd, 0o600)
+                    os.write(fd, corpus.encode("utf-8"))
+                finally:
+                    os.close(fd)
+            elif pf.exists():
+                pf.unlink()   # a re-queued request reuses this workdir: no stale private text
+    except Exception:
+        pass
 
 
 TASK = """Read the brief at {wd}/brief.md and write a complete blog post for saiteja.ai.
@@ -300,6 +329,24 @@ def process(db, doc) -> None:
             source_screenshot = capture_source_screenshot(slug, source_url)
         now = _now()
 
+        extra = {}
+        try:
+            if knowledge is not None:
+                priv = knowledge.read_private(workdir)
+                if priv:
+                    try:
+                        cfg = knowledge.load_config()
+                        n = (cfg or {}).get("overlap_words", 8)
+                        n_over = knowledge.overlap([data.get("content"), data.get("summary"), data.get("linkedinPost"),
+                                                    data.get("title"), " ".join(data.get("tags") or [])], priv, n=n)
+                    except Exception:
+                        n_over = -1
+                    extra = {"privateOverlap": n_over}
+                    if n_over != 0:
+                        extra["privacyFlag"] = True
+        except Exception:
+            extra = {}
+
         ref_ids = []
         for i, r in enumerate(data.get("usedReferences", []) or []):
             rid = f"{slug}-r{i+1}"
@@ -323,6 +370,7 @@ def process(db, doc) -> None:
             "generatedBy": "watcher", "genRequestId": doc.id,
             "sourceUrl": source_url, "kind": req.get("kind"),
             "sourceScreenshot": source_screenshot,
+            **extra,
         })
         doc.reference.update({"status": "ready", "resultSlug": slug, "error": None, "updatedAt": now})
         print(f"  ✓ draft ready: /admin/posts/{slug}")
@@ -333,6 +381,11 @@ def process(db, doc) -> None:
         doc.reference.update({"status": "failed", "error": str(e)[:400], "updatedAt": _now()})
     finally:
         _hb["generating"] = None
+        try:
+            if knowledge is not None:
+                knowledge.scrub_private(GENDIR / doc.id)
+        except Exception:
+            pass
 
 
 def reset_stale(db) -> int:
@@ -628,6 +681,11 @@ def main():
             requeue_auth_failed(db)
             poll_once(db)
             autopost_new_published(db)
+            try:
+                if knowledge is not None:
+                    knowledge.flush_spool()
+            except Exception:
+                pass
             _hb["last_poll_ok_at"] = heartbeat.now_iso()
             _hb["poll_fail_streak"] = 0
             if alerted:
