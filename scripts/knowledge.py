@@ -3,7 +3,7 @@
 A thin, stdlib-only, fail-open client. It (a) fetches a PUBLIC background block (and,
 only when config `private_background` is true, a PRIVATE block the writer must not quote),
 (b) detects when a draft copies private text (flag only, never refuses), and (c) writes ONE
-public-scope entry after Sai's publish tap succeeded, with a durable spool and idempotent
+public ARTIFACT CARD (the post's URL as locator, produced-by the blog pipeline, about the entities its tags name) after Sai's publish tap succeeded, with a durable spool and idempotent
 retry. Config `~/.anywhere/blogger.json`, `enabled:false` by default and a complete off
 switch. Nothing here may break the blog bot or the watcher: no public function raises.
 """
@@ -32,6 +32,10 @@ DEFAULTS = {"v": 1, "enabled": False, "private_background": False,
             "spool": str(Path.home() / ".anywhere/blogger.spool.jsonl"), "overlap_words": 8}
 
 _MAX_RESPONSE = 1048576
+_WRITE_ROUTE = "/v1/op/artifact_link_card"      # the card route; no Idempotency-Key (the service refuses one for this op)
+_PIPELINE = "blog-pipeline"                      # the one entity every post is produced-by
+_SITE_DEFAULT = "https://saiteja.ai"
+_SITE_RE = re.compile(r"^https://[A-Za-z0-9][A-Za-z0-9.-]{0,100}\.[A-Za-z]{2,24}$")
 _SPOOL_CAP = 500
 _SPOOL_MAX_AGE_S = 30 * 86400
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,110}$")
@@ -487,12 +491,20 @@ def overlap(post_texts: list[str], private_block: str, *, n: int = 8) -> int:
 
 
 # ---------------------------------------------------------------- envelope, classify
-def idempotency_key(slug) -> str:
-    return "blog-" + hashlib.sha256(str(slug).encode()).hexdigest()[:32]
+def post_url(slug) -> str | None:
+    """The public address of a published post: the card's locator. SITE_BASE_URL is the same variable the bot uses."""
+    base = (os.environ.get("SITE_BASE_URL") or _SITE_DEFAULT).strip().rstrip("/")
+    if not isinstance(slug, str) or not _SLUG_RE.match(slug) or not _SITE_RE.match(base):
+        return None
+    return base + "/blog/" + slug
 
 
 def build_envelope(slug, title, summary, tags, source_url) -> dict | None:
-    if not isinstance(slug, str) or not _SLUG_RE.match(slug):
+    """The request body of ONE artifact card for a published post (the home side's artifact_link_card route): a public
+    page whose locator is the post's URL, produced by the blog pipeline entity and about the entities the tags name.
+    The card is idempotent by URL, so a retry or a second tap of the same post adds nothing."""
+    url = post_url(slug)
+    if url is None:
         return None
     t = _clean(title, 200).rstrip(".")
     s = _clean(summary, 600).rstrip(".")
@@ -503,19 +515,21 @@ def build_envelope(slug, title, summary, tags, source_url) -> dict | None:
             tg.append(c)
     tg = tg[:8]
     u = _clean(source_url, 300)
-    pieces = ([t + "."] if t else []) + ([s + "."] if s else []) \
-        + (["Tags: " + ", ".join(tg) + "."] if tg else []) + ([u] if u else [])
-    obs = " ".join(pieces)
-    if not obs:
+    pieces = ([s + "."] if s else []) + (["Tags: " + ", ".join(tg) + "."] if tg else []) + ([u] if u else [])
+    text = " ".join(pieces)[:600]
+    if not t and not text:
         return None
-    return {"v": 1, "op": "remember", "via": "blog-bot",
-            "args": {"entity": "blog:" + slug, "entity_type": "artifact", "observation": obs,
-                     "scope": "public", "source": "blog:published",
-                     "source_ref": {"type": "blog", "id": slug}, "confidence": 1.0}}
+    body = {"url": url, "title": t or text[:200].rstrip("."), "produced_by": _PIPELINE}
+    if text:
+        body["summary"] = text
+    if tg:
+        body["about"] = tg
+    return body
 
 
 def _classify(status: int, body: dict) -> str:
-    if status == 200 and isinstance(body, dict) and body.get("state") == "applied":
+    # `partial` = the card is written and some `about` names are not (yet) entities the public scope holds: not a failure
+    if status == 200 and isinstance(body, dict) and body.get("state") in ("written", "partial"):
         return "ok"
     if 300 <= status < 400 or status in (408, 429, 401, 403) or status >= 500:
         return "transient"
@@ -536,8 +550,7 @@ def _refusal_code(status: int, body: dict) -> str:
 def _attempt(cfg, slug: str, env: dict) -> str:
     """One write. 'ok' | 'transient' | 'refused' (logged)."""
     try:
-        status, body = _post(cfg, "/v1/write", env, timeout_s=float(cfg["timeout_write_s"]),
-                             headers={"Idempotency-Key": idempotency_key(slug)})
+        status, body = _post(cfg, _WRITE_ROUTE, env, timeout_s=float(cfg["timeout_write_s"]))
     except _TapError as e:
         _log("write_failed", e.code, once=True)
         return "transient"

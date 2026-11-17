@@ -115,12 +115,12 @@ def _search(by_scope, write=None):
             return _j(200, {"hits": by_scope.get(sc, [])})
         if write is not None:
             return write(rec) if callable(write) else write
-        return _j(200, {"state": "applied", "code": "ok", "replayed": False})
+        return _j(200, {"state": "written", "code": "ok", "replayed": False})
     return h
 
 
 def _ok_write(rec=None):
-    return _j(200, {"state": "applied", "code": "ok", "replayed": False})
+    return _j(200, {"state": "written", "code": "ok", "replayed": False})
 
 
 def _closed_port():
@@ -691,43 +691,74 @@ def test_overlap_truth_table():
 
 
 # ------------------------------------------------------------------ 14-19 publish and spool
-_OBS = [("Hello World", "A summary.", ["a", "b"], "https://x.example/p", "Hello World. A summary. Tags: a, b. https://x.example/p"),
-        ("Hello World", None, ["a", "b"], "https://x.example/p", "Hello World. Tags: a, b. https://x.example/p"),
-        ("Hello World", "A summary.", [], "https://x.example/p", "Hello World. A summary. https://x.example/p"),
-        ("Hello World.", "Done.", [], "", "Hello World. Done.")]
+_SUM = [("Hello World", "A summary.", ["a", "b"], "https://x.example/p", "A summary. Tags: a, b. https://x.example/p"),
+        ("Hello World", None, ["a", "b"], "https://x.example/p", "Tags: a, b. https://x.example/p"),
+        ("Hello World", "A summary.", [], "https://x.example/p", "A summary. https://x.example/p"),
+        ("Hello World.", "Done.", [], "", "Done.")]
 
 
-def test_publish_envelope_exact_and_key_stable():
+def test_publish_envelope_exact_and_no_idempotency_header():
     knowledge._reset_for_tests()
-    for title, summ, tags, url, want in _OBS:
-        assert knowledge.build_envelope("my-slug", title, summ, tags, url)["args"]["observation"] == want, want
+    for title, summ, tags, url, want in _SUM:
+        assert knowledge.build_envelope("my-slug", title, summ, tags, url)["summary"] == want, want
     with _env() as tmp, _Fake(_ok_write) as fk:
         _cfg(tmp, fk.port)
         assert knowledge.publish_entry("my-slug", "Hello World", "A summary.", ["a", "b"], "https://x.example/p", "2026-01-01") is True
         assert knowledge.publish_entry("my-slug", "Hello World", "A summary.", ["a", "b"], "https://x.example/p", "2026-02-02") is True
         assert knowledge.publish_entry("other-slug", "Hello World", "A summary.", ["a", "b"], "https://x.example/p", "x") is True
         r1, r2, r3 = fk.requests
-        want = {"v": 1, "op": "remember", "via": "blog-bot",
-                "args": {"entity": "blog:my-slug", "entity_type": "artifact",
-                         "observation": "Hello World. A summary. Tags: a, b. https://x.example/p",
-                         "scope": "public", "source": "blog:published", "source_ref": {"type": "blog", "id": "my-slug"},
-                         "confidence": 1.0}}
+        want = {"url": "https://saiteja.ai/blog/my-slug", "title": "Hello World", "produced_by": "blog-pipeline",
+                "summary": "A summary. Tags: a, b. https://x.example/p", "about": ["a", "b"]}
         assert r1["body"] == want
         assert r1["raw"] == json.dumps(want, separators=(",", ":"), sort_keys=True).encode()
         assert r1["raw"] == r2["raw"], "retry must send byte-identical bytes"
-        for bad in ("ticket", "at", "published_at"):
-            assert bad not in r1["body"] and bad not in r1["body"]["args"]
-        k = "blog-" + hashlib.sha256(b"my-slug").hexdigest()[:32]
-        assert r1["headers"]["idempotency-key"] == k == r2["headers"]["idempotency-key"]
-        assert re.match(r"^[A-Za-z0-9_-]{16,64}$", k)
-        assert r3["headers"]["idempotency-key"] != k
-        assert r1["path"] == "/v1/write"
+        # a published post is an artifact CARD: never an entity of its own, no type, no scope, no op envelope
+        for bad in ("entity", "entity_type", "scope", "op", "args", "via", "ticket", "at", "published_at", "observation"):
+            assert bad not in r1["body"]
+        # the service refuses an Idempotency-Key on this op: none is sent (the card is idempotent by its URL)
+        assert "idempotency-key" not in r1["headers"] and "idempotency-key" not in r3["headers"]
+        assert r3["body"]["url"] == "https://saiteja.ai/blog/other-slug"
+        assert r1["path"] == "/v1/op/artifact_link_card"
         assert r1["headers"]["content-type"] == "application/json; charset=utf-8"
         assert r1["headers"]["authorization"] == "Bearer " + _token(tmp)
-    assert knowledge.idempotency_key("my-slug") == k
 
 
-def test_publish_never_sends_non_public_scope():
+def test_post_url_follows_site_base_url_and_refuses_unsafe_values():
+    knowledge._reset_for_tests()
+    old = os.environ.get("SITE_BASE_URL")
+    try:
+        os.environ.pop("SITE_BASE_URL", None)
+        assert knowledge.post_url("a-b") == "https://saiteja.ai/blog/a-b"
+        os.environ["SITE_BASE_URL"] = "https://blog.example.org/"
+        assert knowledge.post_url("a-b") == "https://blog.example.org/blog/a-b"
+        for bad in ("http://blog.example.org", "https://user@blog.example.org", "https://blog.example.org:8080", "https://localhost",
+                    "https://blog.example.org/x y"):
+            os.environ["SITE_BASE_URL"] = bad
+            assert knowledge.post_url("a-b") is None and knowledge.build_envelope("a-b", "T", "S", [], "") is None, bad
+        os.environ.pop("SITE_BASE_URL", None)
+        assert knowledge.post_url("A b") is None
+    finally:
+        if old is None:
+            os.environ.pop("SITE_BASE_URL", None)
+        else:
+            os.environ["SITE_BASE_URL"] = old
+
+
+def test_partial_card_is_a_success_and_a_forbidden_op_is_retried_not_dropped():
+    knowledge._reset_for_tests()
+    with _env() as tmp, _Fake(lambda rec: _j(200, {"state": "partial", "missing": ["about"], "entity_id": "e_x"})) as fk:
+        _cfg(tmp, fk.port)
+        assert knowledge.publish_entry("a-slug", "T", "S", ["not-an-entity"], "", "now") is True
+        assert not (tmp / "spool.jsonl").exists()
+    # the grant is applied by an operator later: a 403 spools (transient), it is not a final refusal
+    with _env() as tmp, _Fake(lambda rec: _j(403, {"error": {"code": "forbidden"}})) as fk:
+        _cfg(tmp, fk.port)
+        with _cap():
+            assert knowledge.publish_entry("a-slug", "T", "S", [], "", "now") is False
+        assert _spool_slugs(tmp / "spool.jsonl") == ["a-slug"]
+
+
+def test_publish_never_sends_a_scope_or_a_private_name():
     knowledge._reset_for_tests()
     with _env() as tmp, _Fake(_ok_write) as fk:
         _cfg(tmp, fk.port)
@@ -735,20 +766,22 @@ def test_publish_never_sends_non_public_scope():
             knowledge.publish_entry("a-slug", "personal finance", summ, ["personal", "client:c1"], "", "now")
         assert len(fk.requests) == 3
         for r in fk.requests:
-            assert r["body"]["args"]["scope"] == "public" and r["body"]["op"] == "remember"
-            assert set(r["body"]) == {"v", "op", "via", "args"}
+            assert set(r["body"]) <= {"url", "title", "produced_by", "summary", "about"} and "scope" not in r["body"]
+            assert r["body"]["produced_by"] == "blog-pipeline"
 
 
 def test_publish_empty_parts_and_tag_caps():
     knowledge._reset_for_tests()
     env = knowledge.build_envelope("a-slug", "T`itle." + "x" * 400, None, ["t" * 60 + "."] * 3 + [str(i) for i in range(20)] + ["", "  "],
                                    None)
-    obs = env["args"]["observation"]
-    assert ".." not in obs and "  " not in obs and "`" not in obs, obs
-    assert obs.count(",") == 7, obs                    # at most 8 tags
-    assert len(obs.split(". Tags:")[0]) <= 201, len(obs)
+    assert ".." not in env["title"] and "`" not in env["title"] and len(env["title"]) <= 200, env["title"]
+    assert len(env["about"]) == 8 and all(len(x) <= 40 for x in env["about"])       # at most 8 tags, each capped
+    assert len(env["summary"]) <= 600 and ".." not in env["summary"] and "  " not in env["summary"]
     env2 = knowledge.build_envelope("a-slug", "Title.", "Summary.", ["tag."], "https://x.example")
-    assert env2["args"]["observation"] == "Title. Summary. Tags: tag. https://x.example"
+    assert env2 == {"url": "https://saiteja.ai/blog/a-slug", "title": "Title", "produced_by": "blog-pipeline",
+                    "summary": "Summary. Tags: tag. https://x.example", "about": ["tag"]}
+    env3 = knowledge.build_envelope("a-slug", "Only a title", None, None, None)
+    assert env3 == {"url": "https://saiteja.ai/blog/a-slug", "title": "Only a title", "produced_by": "blog-pipeline"}
     with _env() as tmp, _Fake(_ok_write) as fk:
         _cfg(tmp, fk.port)
         for bad in ("", "A", "a b", "../x", "a" * 120, "-lead"):
@@ -793,10 +826,10 @@ def test_publish_failure_spools_and_returns_false():
 def test_publish_final_refusals_not_spooled():
     knowledge._reset_for_tests()
     cases = [(_j(422, {"error": {"code": "bad_thing", "message": "secret-ish text"}}), "write_refused 422 bad_thing"),
-             (_j(409, {"error": {"code": "idempotency_conflict"}}), "write_refused 409 idempotency_conflict"),
-             (_j(400, {"error": {"code": "idempotency_key_required"}}), "write_refused 400 idempotency_key_required"),
+             (_j(409, {"error": {"code": "conflict"}}), "write_refused 409 conflict"),
+             (_j(400, {"error": {"code": "invalid_request"}}), "write_refused 400 invalid_request"),
              (_j(413, {"error": {"code": "BAD CODE!"}}), "write_refused 413 -"),
-             (_j(201, {"state": "applied"}), "write_refused 201 -"),
+             (_j(201, {"state": "written"}), "write_refused 201 -"),
              (_j(200, {"state": "rejected"}), "write_refused 200 rejected")]
     for resp, line in cases:
         with _env() as tmp, _Fake(lambda rec, r=resp: r) as fk:
@@ -831,8 +864,8 @@ def test_flush_spool_writes_and_removes():
         with _cap():
             assert knowledge.flush_spool() == 1
         assert _spool_slugs(tmp / "spool.jsonl") == []
-        keys = [r["headers"]["idempotency-key"] for r in fk.requests]
-        assert keys == [knowledge.idempotency_key(s) for s in ("aa-one", "bb-two", "cc-three")], keys
+        urls = [r["body"]["url"] for r in fk.requests]
+        assert urls == ["https://saiteja.ai/blog/" + s for s in ("aa-one", "bb-two", "cc-three")], urls
         assert not list(tmp.glob("*.tmp"))
 
 
@@ -864,10 +897,10 @@ def test_flush_stops_on_first_transient_failure():
     # a publish appended during the flush's network call survives, and never waited on a lock
     box = {}
     with _env() as tmp:
-        newkey = knowledge.idempotency_key("zz-new")
+        newurl = "https://saiteja.ai/blog/zz-new"
 
         def h(rec):
-            if rec["headers"]["idempotency-key"] == newkey:
+            if rec["body"]["url"] == newurl:
                 return _j(500)
             def work():
                 t0 = time.monotonic()
@@ -891,7 +924,7 @@ def test_flush_stops_on_first_transient_failure():
 
 def test_flush_replay_is_harmless():
     knowledge._reset_for_tests()
-    cases = [(_j(200, {"state": "applied", "replayed": True}, headers={"X-Replayed": "1"}), 1, None),
+    cases = [(_j(200, {"state": "written", "replayed": True}, headers={"X-Replayed": "1"}), 1, None),
              (_j(409, {"error": {"code": "idempotency_conflict"}}), 0, "write_refused 409 idempotency_conflict"),
              (_j(422, {"error": {"code": "invalid"}}), 0, "write_refused 422 invalid"),
              (_j(200, {"state": "rejected"}), 0, "write_refused 200 rejected")]
@@ -1058,11 +1091,11 @@ def test_process_flags_overlap_in_the_same_set():
             pay = _payload(log)
             assert pay["privateOverlap"] == -1 and pay["privacyFlag"] is True, pay
             # the publish tap withholds the public write for the flagged post, the human gate is unchanged
-            before = len(fk.paths("/v1/write"))
+            before = len(fk.paths("/v1/op/artifact_link_card"))
             post = dict(pay, published=False, tgMessageId=7)
             calls = _bb_callback(bb, post, "p")
             assert ("update", {"published": True, "publishedAt": _FIXED_NOW, "updatedAt": _FIXED_NOW}) in calls
-            assert len(fk.paths("/v1/write")) == before
+            assert len(fk.paths("/v1/op/artifact_link_card")) == before
         # exception path: scrubbed too
         log, wd = _run_process(bw, tmp / "exc", lambda w, s: RuntimeError("writer died"))
         assert not (wd / "private_background.txt").exists()
@@ -1214,5 +1247,5 @@ def test_static_hygiene():
     assert "/ho" + "me/" not in src
     me = (HERE / "test_knowledge_tap.py").read_text()
     assert "__" + "main__" not in me and "sys." + "exit(" not in me
-    assert len(re.findall(r"^def test_", me, re.M)) == 33
+    assert len(re.findall(r"^def test_", me, re.M)) == 35
     assert '"enabled": False' in src
