@@ -24,6 +24,10 @@ from xml.etree import ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import heartbeat  # noqa: E402
+try:
+    import knowledge  # noqa: E402
+except Exception:
+    knowledge = None
 
 os.environ.pop("GOOGLE_APPLICATION_CREDENTIALS", None)
 
@@ -414,12 +418,24 @@ Write ONLY JSON to {wd}/skeptic.json:
 "severity": "low" | "medium" | "high", "stillWorthIt": true/false}}"""
 
 
+def _fence_public(text: str) -> str:
+    text = text.replace("<<<END UNTRUSTED", "<<< END UNTRUSTED").replace("<<<BEGIN UNTRUSTED", "<<< BEGIN UNTRUSTED")
+    return f"<<<BEGIN UNTRUSTED SOURCE TEXT\n{text}\n<<<END UNTRUSTED SOURCE TEXT"
+
+
 def assess(c: dict, wd: Path) -> dict | None:
     tmpl = ASSESS_ANN if c["kind"] == "announcement" else ASSESS_PAPER
     prompt = tmpl.format(wd=wd.as_posix(), source=c["source"], title=c["title"],
                          authors=", ".join(c.get("authors") or [])[:300],
                          abstract=(c.get("abstract") or "(none)")[:2500],
                          signals=json.dumps(c["signals"]))
+    try:
+        if knowledge is not None:
+            pb = knowledge.public_block(c["title"])
+            if pb:
+                prompt += "\n\n## Public background (may be used)\n" + _fence_public(pb)
+    except Exception:
+        pass
     try:
         v = _run_agent(prompt, wd, "verdict.json")
         return v
