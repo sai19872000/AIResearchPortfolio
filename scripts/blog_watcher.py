@@ -554,11 +554,15 @@ def autopost_new_published(db) -> int:
     LI_MIN_GAP_S so a renewal doesn't flood the feed. Pre-automation posts
     were marked handled, so only NEW publishes fire.
     Set LINKEDIN_AUTOPOST_DRY=1 to dry-run."""
-    from google.cloud.firestore_v1.base_query import FieldFilter
+    try:
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        q = db.collection("blogPosts").where(filter=FieldFilter("published", "==", True))
+    except ImportError:
+        q = db.collection("blogPosts").where("published", "==", True)
     site = os.environ.get("SITE_BASE_URL", "https://saiteja.ai")
     dry = os.environ.get("LINKEDIN_AUTOPOST_DRY") == "1"
     cands = []
-    for d in db.collection("blogPosts").where(filter=FieldFilter("published", "==", True)).stream():
+    for d in q.stream():
         p = d.to_dict()
         if p.get("linkedinPostId") or (p.get("linkedinTries") or 0) >= 2:
             continue
