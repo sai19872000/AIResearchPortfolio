@@ -235,14 +235,8 @@ def _import_sibling(name):
 
 
 def _origin_module(name):
-    """The origin/main copy of scripts/<name>.py, executed in a scratch namespace."""
-    try:
-        src = subprocess.run(["git", "show", f"origin/main:scripts/{name}.py"], capture_output=True, text=True,
-                             cwd=str(HERE.parent), timeout=30, check=True).stdout
-        tap_free = False
-    except Exception:
-        src = (HERE / f"{name}.py").read_text()
-        tap_free = True
+    """Tap-free baseline of scripts/<name>.py, executed in a scratch namespace."""
+    src = (HERE / f"{name}.py").read_text()
     mod = types.ModuleType(name + "_origin")
     mod.__file__ = str(HERE / f"{name}.py")
     old = subprocess.run
@@ -252,8 +246,7 @@ def _origin_module(name):
         exec(compile(src, f"origin_{name}.py", "exec"), mod.__dict__)
     finally:
         subprocess.run = old
-    if tap_free:
-        mod.knowledge = None
+    mod.knowledge = None
     return mod
 
 
@@ -1094,7 +1087,7 @@ def test_process_flags_overlap_in_the_same_set():
             before = len(fk.paths("/v1/op/artifact_link_card"))
             post = dict(pay, published=False, tgMessageId=7)
             calls = _bb_callback(bb, post, "p")
-            assert ("update", {"published": True, "publishedAt": _FIXED_NOW, "updatedAt": _FIXED_NOW}) in calls
+            assert ("update", {"published": True, "publishedAt": _FIXED_NOW, "updatedAt": _FIXED_NOW, "tgSynced": True}) in calls
             assert len(fk.paths("/v1/op/artifact_link_card")) == before
         # exception path: scrubbed too
         log, wd = _run_process(bw, tmp / "exc", lambda w, s: RuntimeError("writer died"))

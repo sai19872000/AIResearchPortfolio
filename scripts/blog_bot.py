@@ -48,6 +48,14 @@ def _db():
     return firestore.Client(project=PROJECT, database=DATABASE)
 
 
+def _where_eq(coll, field: str, value):
+    try:
+        from google.cloud.firestore_v1.base_query import FieldFilter
+        return coll.where(filter=FieldFilter(field, "==", value))
+    except ImportError:
+        return coll.where(field, "==", value)
+
+
 # ---- Telegram API -------------------------------------------------------
 def tg(method: str, **params):
     data = json.dumps(params).encode()
@@ -87,9 +95,9 @@ def _now() -> str:
 
 
 # ---- intake -------------------------------------------------------------
-def create_request(topic: str, urls=None, refs=None) -> str:
+def create_request(topic: str, urls=None, refs=None, db=None) -> str:
     now = _now()
-    ref = _db().collection("blogGenRequests").add({
+    ref = (db or _db()).collection("blogGenRequests").add({
         "topic": topic.strip(), "angle": None,
         "referenceUrls": urls or [], "references": refs or [], "options": {},
         "status": "queued", "error": None, "resultSlug": None,
@@ -107,7 +115,7 @@ def extract_pdf_text(file_bytes: bytes) -> str:
         return f"[could not read pdf: {e}]"
 
 
-def handle_document(msg: dict):
+def handle_document(msg: dict, db=None):
     doc = msg["document"]
     name = doc.get("file_name", "upload.pdf")
     if not (doc.get("mime_type", "").endswith("pdf") or name.lower().endswith(".pdf")):
@@ -123,19 +131,19 @@ def handle_document(msg: dict):
     text = extract_pdf_text(data)
     topic = (msg.get("caption") or f"A post drawing on the attached document: {name}").strip()
     rid = create_request(topic, urls=URL_RE.findall(msg.get("caption", "")),
-                         refs=[{"title": name, "url": None, "text": text}])
+                         refs=[{"title": name, "url": None, "text": text}], db=db)
     send(f"📥 Queued — writing a draft from <b>{html.escape(name)}</b>. I'll send it for approval when it's ready.")
 
 
-def handle_message(msg: dict):
+def handle_message(msg: dict, db=None):
     text = (msg.get("text") or "").strip()
     if msg.get("document"):
-        return handle_document(msg)
+        return handle_document(msg, db=db)
     if not text:
         return
     # A reply to a draft/published card = "rewrite this caption", not a new idea.
     reply = msg.get("reply_to_message")
-    if reply and not text.startswith("/") and handle_caption_edit(reply, text):
+    if reply and not text.startswith("/") and handle_caption_edit(reply, text, db=db):
         return
     if text.startswith("/start"):
         send("👋 This is your blog desk. Send me an <b>idea</b> (a sentence, or with links / a PDF) and "
@@ -152,20 +160,20 @@ def handle_message(msg: dict):
              "(edits the live LinkedIn post once it's published).")
         return
     if text.startswith("/queue"):
-        return cmd_queue()
+        return cmd_queue(db=db)
     # a plain idea
     urls = URL_RE.findall(text)
-    rid = create_request(text, urls=urls)
+    rid = create_request(text, urls=urls, db=db)
     extra = f" ({len(urls)} link{'s' if len(urls) != 1 else ''} as references)" if urls else ""
     send(f"📥 Queued{extra} — I'll send the draft for approval when it's ready.")
 
 
-def cmd_queue():
-    db = _db()
-    reqs = [d.to_dict() for d in db.collection("blogGenRequests").stream()]
-    pending = [r for r in reqs if r.get("status") in ("queued", "generating")]
-    drafts = [d.to_dict() for d in db.collection("blogPosts").stream()
-              if not d.to_dict().get("published") and d.to_dict().get("generatedBy") == "watcher"]
+def cmd_queue(db=None):
+    db = db or _db()
+    pending = ([d.to_dict() for d in _where_eq(db.collection("blogGenRequests"), "status", "queued").stream()]
+               + [d.to_dict() for d in _where_eq(db.collection("blogGenRequests"), "status", "generating").stream()])
+    drafts = [d.to_dict() for d in _where_eq(db.collection("blogPosts"), "published", False).stream()
+              if d.to_dict().get("generatedBy") == "watcher"]
     lines = ["<b>Queue</b>"]
     if pending:
         lines += [f"• {html.escape(r['topic'][:50])} — <i>{r['status']}</i>" for r in pending[:8]]
@@ -202,17 +210,26 @@ def _draft_card(p: dict) -> str:
             "↩️ reply to this message to rewrite the caption")
 
 
+_awaiting_sync: set[str] = set()
+_initial_sync_done = False
+
+
 def notify_ready_drafts(db):
-    for d in db.collection("blogPosts").stream():
+    for d in _where_eq(db.collection("blogPosts"), "published", False).stream():
         p = d.to_dict()
-        if p.get("published") or p.get("generatedBy") != "watcher" or p.get("tgNotified"):
+        if p.get("published") or p.get("generatedBy") != "watcher":
             continue
         slug = p["slug"]
+        if p.get("tgNotified"):
+            if p.get("tgMessageId") and not p.get("tgSynced"):
+                _awaiting_sync.add(slug)
+            continue
         body = _draft_card(p)
         img = _draft_image(p)
         res = (tg("sendPhoto", chat_id=CHAT_ID, photo=img, caption=body,
                   parse_mode="HTML", reply_markup=kbd(slug)) if img else None)
         mid = (res.get("result") or {}).get("message_id") if res else None
+        is_photo = mid is not None
         if mid is None:
             # No image, or the photo send failed (caption/limits, bad image URL).
             # Fall back to a plain-text card — 4096-char limit, no remote fetch.
@@ -223,30 +240,31 @@ def notify_ready_drafts(db):
             # instead of silently marking it done (the old bug).
             print(f"notify FAILED {slug}: {res}")
             continue
-        d.reference.update({"tgNotified": True, "tgMessageId": mid, "tgKey": tgkey(slug)})
+        d.reference.update({"tgNotified": True, "tgMessageId": mid, "tgKey": tgkey(slug), "tgIsPhoto": is_photo})
+        _awaiting_sync.add(slug)
         print(f"notified draft: {slug}")
 
 
 def _find_by_key(db, key: str):
-    for d in db.collection("blogPosts").stream():
-        if d.to_dict().get("tgKey") == key:
-            return d
+    for d in _where_eq(db.collection("blogPosts"), "tgKey", key).limit(1).stream():
+        return d
     return None
 
 
 def _find_by_message_id(db, mid):
-    for d in db.collection("blogPosts").stream():
-        if d.to_dict().get("tgMessageId") == mid:
-            return d
+    if mid is None:
+        return None
+    for d in _where_eq(db.collection("blogPosts"), "tgMessageId", mid).limit(1).stream():
+        return d
     return None
 
 
-def handle_caption_edit(reply: dict, new_text: str) -> bool:
+def handle_caption_edit(reply: dict, new_text: str, db=None) -> bool:
     """A text reply to a draft/published card means "rewrite this caption".
     If the post is already on LinkedIn, edit the live post; if it's still a
     draft, update the caption the watcher will post. Returns True when the
     reply matched a known post (so it shouldn't be treated as a new idea)."""
-    db = _db()
+    db = db or _db()
     doc = _find_by_message_id(db, reply.get("message_id"))
     if not doc:
         return False
@@ -272,6 +290,15 @@ def handle_caption_edit(reply: dict, new_text: str) -> bool:
     return True
 
 
+def _record_knowledge_publish(p: dict, published_at: str) -> None:
+    if p.get("privacyFlag") is not True and knowledge is not None:
+        try:
+            knowledge.publish_entry(p["slug"], p["title"], p.get("summary"),
+                                    p.get("tags") or [], p.get("sourceUrl") or "", published_at)
+        except Exception:
+            pass
+
+
 def handle_callback(cb: dict, db):
     data = cb.get("data", "")
     cid = cb["id"]
@@ -288,17 +315,15 @@ def handle_callback(cb: dict, db):
         if p.get("published"):
             tg("answerCallbackQuery", callback_query_id=cid, text="already published")
         else:
-            doc.reference.update({"published": True, "publishedAt": _now(), "updatedAt": _now()})
+            now = _now()
+            doc.reference.update({"published": True, "publishedAt": now, "updatedAt": now, "tgSynced": True})
+            _awaiting_sync.discard(p["slug"])
             tg("answerCallbackQuery", callback_query_id=cid, text="published ✓")
             _edit_status(mid, p, "✅ <b>Published</b> — posting to LinkedIn shortly.")
-            if p.get("privacyFlag") is not True:
-                try:
-                    if knowledge is not None:
-                        knowledge.publish_entry(p["slug"], p["title"], p.get("summary"), p.get("tags") or [], p.get("sourceUrl") or "", _now())
-                except Exception:
-                    pass
+            _record_knowledge_publish(p, now)
     elif action == "r":
         doc.reference.delete()
+        _awaiting_sync.discard(p["slug"])
         tg("answerCallbackQuery", callback_query_id=cid, text="rejected")
         _edit_status(mid, p, "🗑 <b>Rejected</b> — draft discarded.")
 
@@ -306,23 +331,43 @@ def handle_callback(cb: dict, db):
 def _edit_status(mid, post, status_html: str):
     if not mid:
         return
-    # photo messages: edit the caption; text messages: edit text
-    img = _draft_image(post)
+    # photo messages: edit the caption; text messages: edit text (with fallback when
+    # a photo send fell back to text before tgIsPhoto was recorded).
+    is_photo = post["tgIsPhoto"] if "tgIsPhoto" in post else bool(_draft_image(post))
     base = f"📝 <b>{html.escape(post['title'])}</b>\n\n{status_html}"
-    if img:
-        tg("editMessageCaption", chat_id=CHAT_ID, message_id=mid, caption=base, parse_mode="HTML")
+    if is_photo:
+        res = tg("editMessageCaption", chat_id=CHAT_ID, message_id=mid, caption=base, parse_mode="HTML")
+        if not (isinstance(res, dict) and res.get("ok")):
+            tg("editMessageText", chat_id=CHAT_ID, message_id=mid, text=base, parse_mode="HTML")
     else:
         tg("editMessageText", chat_id=CHAT_ID, message_id=mid, text=base, parse_mode="HTML")
     tg("editMessageReplyMarkup", chat_id=CHAT_ID, message_id=mid, reply_markup={"inline_keyboard": []})
 
 
+def _sync_one_published(d) -> None:
+    p = d.to_dict()
+    if p.get("tgNotified") and p.get("tgMessageId") and p.get("published") and not p.get("tgSynced"):
+        _edit_status(p["tgMessageId"], p, "✅ <b>Published</b> from the website.")
+        d.reference.update({"tgSynced": True})
+        _record_knowledge_publish(p, p.get("publishedAt") or _now())
+
+
 def sync_published_elsewhere(db):
     """If a notified draft was published/deleted via the website, reflect it."""
-    for d in db.collection("blogPosts").stream():
-        p = d.to_dict()
-        if p.get("tgNotified") and p.get("tgMessageId") and p.get("published") and not p.get("tgSynced"):
-            _edit_status(p["tgMessageId"], p, "✅ <b>Published</b> from the website.")
-            d.reference.update({"tgSynced": True})
+    global _initial_sync_done
+    if not _initial_sync_done:
+        for d in _where_eq(db.collection("blogPosts"), "published", True).stream():
+            _sync_one_published(d)
+        _initial_sync_done = True
+    for slug in list(_awaiting_sync):
+        snap = db.collection("blogPosts").document(slug).get()
+        if not snap.exists:
+            _awaiting_sync.discard(slug)
+            continue
+        p = snap.to_dict()
+        if p.get("published") or p.get("tgSynced"):
+            _sync_one_published(snap)
+            _awaiting_sync.discard(slug)
 
 
 # ---- research scout recommendations -------------------------------------
@@ -345,7 +390,7 @@ def _research_card(c: dict) -> str:
         meta.append(f"confidence {v['confidence']}/10")
     if meta:
         lines.append(" · ".join(meta))
-    lines.append(f"🔗 <a href=\"{c.get('url')}\">original source</a>")
+    lines.append(f"🔗 <a href=\"{html.escape(c.get('url') or '', quote=True)}\">original source</a>")
     return "\n".join(lines)
 
 
@@ -357,7 +402,7 @@ def _research_kbd(key: str):
 def notify_research_candidates(db):
     """Send a Telegram card for each recommended-but-unnotified scout pick.
     GATE 1: nothing is written until Sai taps Draft this."""
-    for d in db.collection("researchCandidates").stream():
+    for d in _where_eq(db.collection("researchCandidates"), "status", "recommended").stream():
         c = d.to_dict()
         if c.get("status") != "recommended" or c.get("notified"):
             continue
@@ -370,14 +415,14 @@ def notify_research_candidates(db):
         print(f"recommended: {(c.get('title') or '')[:50]}")
 
 
-def create_research_request(c: dict) -> str:
+def create_research_request(c: dict, db=None) -> str:
     """Turn an approved recommendation into a blogGenRequest (existing pipeline).
     Carries kind + sourceUrl so the post + LinkedIn caption link the original."""
     now = _now()
     kind = c.get("kind") or "research"
     lead = "An informational post about this announcement" if kind == "announcement" \
         else "A post about this paper"
-    return _db().collection("blogGenRequests").add({
+    return (db or _db()).collection("blogGenRequests").add({
         "topic": f"{lead}: {c.get('title')}",
         "title": c.get("title"),   # the watcher slugs from THIS, not the boilerplate lead
         "angle": (c.get("verdict") or {}).get("whyItMatters"),
@@ -408,7 +453,7 @@ def handle_research_callback(db, action, key, cid):
         if c.get("status") == "accepted":
             tg("answerCallbackQuery", callback_query_id=cid, text="already queued")
             return
-        create_research_request(c)
+        create_research_request(c, db=db)
         snap.reference.update({"status": "accepted"})
         tg("answerCallbackQuery", callback_query_id=cid, text="queued ✍️")
         _edit_research_status(mid, f"✍️ <b>Drafting</b> — {title}\nI'll send the draft to approve.")
@@ -444,7 +489,7 @@ def main():
                 msg = upd.get("message") or {}
                 if msg.get("chat", {}).get("id") != CHAT_ID:
                     continue  # locked to one chat
-                handle_message(msg)
+                handle_message(msg, db=db)
             od.set({"offset": offset})
             notify_research_candidates(db)
             notify_ready_drafts(db)

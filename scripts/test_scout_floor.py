@@ -111,6 +111,47 @@ def test_gate_thin_day_backfills_to_floor_end_to_end():
     assert sum(1 for c in res if c["verdict"].get("belowBar")) == 1   # exactly one floor pick
 
 
+def test_anthropic_skips_category_tabs():
+    from unittest import mock
+    html_body = (
+        '<a href="/news/announcements">Announcements</a>'
+        '<a href="/news/features">Features</a>'
+        '<a href="/news/partnerships">Partnerships</a>'
+        '<a href="/news/product">Product</a>'
+        '<a href="/news/distillation-defenses">Distillation Defenses</a>'
+    )
+    with mock.patch.object(rs, "_get", lambda url: html_body):
+        items = rs.src_anthropic()
+    assert [i["url"] for i in items] == ["https://www.anthropic.com/news/distillation-defenses"], items
+
+
+def test_arxiv_bad_xml_returns_empty_without_crash():
+    from unittest import mock
+    with mock.patch.object(rs, "_get", lambda url: "<html><body>Rate limited</body></html>"):
+        assert rs.src_arxiv() == []
+
+
+def test_prune_scout_keeps_files_and_newest_dirs():
+    import os, tempfile
+    with tempfile.TemporaryDirectory() as td:
+        gen = Path(td)
+        logf = gen / "jev_shadow.jsonl"
+        logf.write_text("{}\n")
+        for i in range(4):
+            d = gen / f"cid{i}"
+            d.mkdir()
+            os.utime(d, (100 + i, 100 + i))
+        old_gendir = rs.GENDIR
+        rs.GENDIR = gen
+        try:
+            removed = rs.prune_scout(keep=2)
+        finally:
+            rs.GENDIR = old_gendir
+        assert removed == 2
+        assert logf.exists()
+        assert sorted(p.name for p in gen.iterdir()) == ["cid2", "cid3", "jev_shadow.jsonl"]
+
+
 if __name__ == "__main__":
     for name in ["test_enough_cleared_returns_top_maxrecs_no_floor",
                  "test_two_cleared_returns_both_no_backfill",
@@ -120,7 +161,10 @@ if __name__ == "__main__":
                  "test_skeptic_dropped_never_surfaced_even_as_floor",
                  "test_diversify_prolific_source_cannot_monopolize",
                  "test_diversify_fewer_items_than_limit_no_crash",
-                 "test_gate_thin_day_backfills_to_floor_end_to_end"]:
+                 "test_gate_thin_day_backfills_to_floor_end_to_end",
+                 "test_anthropic_skips_category_tabs",
+                 "test_arxiv_bad_xml_returns_empty_without_crash",
+                 "test_prune_scout_keeps_files_and_newest_dirs"]:
         globals()[name]()
         print(f"ok  {name}")
     print("PASS test_scout_floor")

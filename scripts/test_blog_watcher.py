@@ -159,3 +159,82 @@ def test_source_url_is_fetched_even_when_not_listed():
         bw.write_brief(Path(tempfile.mkdtemp()), {"topic": "t", "kind": "announcement",
                                                   "sourceUrl": "https://openai.com/index/x", "referenceUrls": []}, "slug")
     assert seen == ["https://openai.com/index/x"]
+
+
+def test_prune_gen_preserves_scout_dir():
+    with tempfile.TemporaryDirectory() as td:
+        gen = Path(td)
+        scout = gen / "scout"
+        scout.mkdir()
+        (scout / "jev_shadow.jsonl").write_text("{}\n")
+        os.utime(scout, (1, 1))  # oldest mtime — must still be kept!
+        for i in range(4):
+            d = gen / f"req-{i}"
+            d.mkdir()
+            os.utime(d, (100 + i, 100 + i))
+        old_gendir = bw.GENDIR
+        bw.GENDIR = gen
+        try:
+            removed = bw.prune_gen(keep=2)
+        finally:
+            bw.GENDIR = old_gendir
+        assert removed == 2
+        assert scout.exists() and (scout / "jev_shadow.jsonl").exists()
+        assert sorted(p.name for p in gen.iterdir()) == ["req-2", "req-3", "scout"]
+
+
+def test_autopost_skips_token_probe_during_cooldown():
+    import time
+    from unittest import mock
+    probed = []
+
+    class _FakeDoc:
+        def __init__(self, d):
+            self._d = d
+        def to_dict(self):
+            return dict(self._d)
+
+    class _FakeQ:
+        def where(self, *a, **k):
+            return self
+        def stream(self):
+            return [_FakeDoc({"slug": "p1", "published": True, "publishedAt": "2026-11-21T12:00:00Z"})]
+
+    class _FakeDB:
+        def collection(self, name):
+            return _FakeQ()
+
+    old_last = bw._li_state["last_post"]
+    bw._li_state["last_post"] = time.time()
+    try:
+        with mock.patch.object(bw, "_li_token_ok", lambda n: probed.append(n) or True):
+            assert bw.autopost_new_published(_FakeDB()) == 0
+        assert probed == []
+    finally:
+        bw._li_state["last_post"] = old_last
+
+
+def test_heartbeat_unlinks_temp_file_on_write_error():
+    with tempfile.TemporaryDirectory() as td:
+        os.environ["SAITEJA_HEARTBEAT_DIR"] = td
+        try:
+            # A set is not JSON-serializable -> json.dump raises inside hb.write
+            assert hb.write("h.json", {"bad": {1, 2}}) is False
+            leftovers = list(Path(td).glob("h.json.*"))
+            assert leftovers == [], leftovers
+        finally:
+            del os.environ["SAITEJA_HEARTBEAT_DIR"]
+
+
+def test_linkedin_cleanup_removes_only_tmp_li_images():
+    with tempfile.TemporaryDirectory() as td:
+        local = Path(td) / "keep.png"
+        local.write_bytes(b"png")
+        tmp_img = Path(tempfile.gettempdir()) / "li-img-test-cleanup-regression.png"
+        tmp_img.write_bytes(b"png")
+        try:
+            li._cleanup_tmp_images([("local", local), ("downloaded", tmp_img)])
+            assert local.exists()
+            assert not tmp_img.exists()
+        finally:
+            tmp_img.unlink(missing_ok=True)

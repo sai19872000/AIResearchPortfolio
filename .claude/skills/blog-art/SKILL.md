@@ -22,7 +22,8 @@ public art bucket, printing the URL.
 ## How to render
 
 Run from the repo root. Each call prints a line `ART_URL: https://…` — capture
-that URL and use it.
+that URL and use it. Invoke each command as its own standalone Bash call (do not
+chain with `&&`/`;` and do not prefix `cd` or env vars).
 
 ```
 # hero (once per post). <slug> = the post's slug.
