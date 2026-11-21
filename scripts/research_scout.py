@@ -108,7 +108,11 @@ def src_arxiv() -> list[dict]:
     except Exception as e:
         print(f"  arxiv: {e}"); return out
     ns = {"a": "http://www.w3.org/2005/Atom"}
-    for e in ET.fromstring(xml).findall("a:entry", ns):
+    try:
+        root = ET.fromstring(xml)
+    except Exception as e:
+        print(f"  arxiv: bad xml {e}"); return out
+    for e in root.findall("a:entry", ns):
         aid = (e.findtext("a:id", "", ns) or "").strip()
         title = re.sub(r"\s+", " ", (e.findtext("a:title", "", ns) or "")).strip()
         summ = re.sub(r"\s+", " ", (e.findtext("a:summary", "", ns) or "")).strip()
@@ -183,6 +187,13 @@ def _rss_items(url: str, source: str, limit: int = 15) -> list[dict]:
     return out[:limit]
 
 
+_ANTHROPIC_CAT_SLUGS = {
+    "announcements", "features", "partnerships", "product", "policy",
+    "safeguards", "security", "research", "company", "safety", "events",
+    "press", "media", "all",
+}
+
+
 def src_anthropic() -> list[dict]:
     """No clean RSS — best-effort parse of the news index for article links."""
     out = []
@@ -193,10 +204,11 @@ def src_anthropic() -> list[dict]:
     seen = set()
     for m in re.finditer(r'href="(/news/[a-z0-9\-]+)"', h):
         path = m.group(1)
-        if path in seen or path == "/news":
+        raw_slug = path.rsplit("/", 1)[-1]
+        if path in seen or path == "/news" or raw_slug in _ANTHROPIC_CAT_SLUGS:
             continue
         seen.add(path)
-        slug = path.rsplit("/", 1)[-1].replace("-", " ")
+        slug = raw_slug.replace("-", " ")
         out.append({"kind": "announcement", "source": "anthropic",
                     "source_id": "https://www.anthropic.com" + path,
                     "title": slug.title(),
@@ -671,6 +683,23 @@ def write_recs(db, recs: list[dict], dry: bool) -> None:
         print(f"  ✓ {tag}: {c['kind']} · {c['title'][:60]}")
 
 
+def prune_scout(keep: int = int(os.environ.get("SCOUT_GEN_KEEP", "200"))) -> int:
+    """Retention for .gen/scout/<cid>/ subdirs (keeps jev_shadow.jsonl and other files)."""
+    try:
+        if not GENDIR.exists():
+            return 0
+        dirs = sorted((d for d in GENDIR.iterdir() if d.is_dir()),
+                      key=lambda d: d.stat().st_mtime, reverse=True)
+        removed = 0
+        for d in dirs[keep:]:
+            subprocess.run(["rm", "-rf", str(d)], timeout=30)
+            removed += 1
+        return removed
+    except Exception as e:
+        print(f"scout prune skipped: {e}")
+        return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--once", action="store_true")
@@ -709,6 +738,7 @@ def main():
             "last_run_at": heartbeat.now_iso(), "n_candidates": len(cands),
             "n_finalists": len(papers) + len(anns), "n_recommendations": len(recs),
             "n_below_bar": floor_n})
+        prune_scout()
     print("done.")
 
 

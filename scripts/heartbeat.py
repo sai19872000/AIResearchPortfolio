@@ -43,9 +43,16 @@ def write(filename: str, fields: dict, merge: bool = True) -> bool:
         data["written_at"] = now_iso()
         data["pid"] = os.getpid()
         fd, tmp = tempfile.mkstemp(dir=str(d), prefix=filename + ".")
-        with os.fdopen(fd, "w") as f:
-            json.dump(data, f, indent=1, sort_keys=True)
-        os.replace(tmp, path)
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(data, f, indent=1, sort_keys=True)
+            os.replace(tmp, path)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+            raise
         return True
     except Exception as e:  # noqa: BLE001
         print(f"heartbeat write skipped: {e}")

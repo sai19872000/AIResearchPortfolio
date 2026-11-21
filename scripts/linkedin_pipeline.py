@@ -436,53 +436,68 @@ def _linkedin_image_urls(post: dict) -> list[tuple[str, str]]:
     return out
 
 
+def _cleanup_tmp_images(images: list[tuple[str, Path]]) -> None:
+    """Remove temporary PNGs downloaded by _resolve_image from /tmp."""
+    import tempfile
+    tmp_dir = Path(tempfile.gettempdir()).resolve()
+    for _label, p in images:
+        try:
+            if p.name.startswith("li-img-") and p.resolve().parent == tmp_dir:
+                p.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def cmd_publish(a):
     post = _load_post(a.slug)
     text = build_draft(post)
     images: list[tuple[str, Path]] = []   # ordered (label, local path)
-    for label, url in _linkedin_image_urls(post):
-        p = _resolve_image(url)
-        if p:
-            images.append((label, p))
+    try:
+        for label, url in _linkedin_image_urls(post):
+            p = _resolve_image(url)
+            if p:
+                images.append((label, p))
+            else:
+                print(f"  ({label} unavailable: {url})")
+        print("─" * 60)
+        print(text)
+        print("─" * 60)
+        if images:
+            for i, (label, p) in enumerate(images, 1):
+                print(f"image {i} ({label}): {p}")
         else:
-            print(f"  ({label} unavailable: {url})")
-    print("─" * 60)
-    print(text)
-    print("─" * 60)
-    if images:
-        for i, (label, p) in enumerate(images, 1):
-            print(f"image {i} ({label}): {p}")
-    else:
-        print("image: (none)")
+            print("image: (none)")
 
-    if not a.publish:
-        print("\nDRY RUN — nothing posted. Sends a Telegram preview for approval.")
-        _tg_preview(text, images[0][1] if images else None)
-        print("\nto actually post: add --publish")
-        return
+        if not a.publish:
+            print("\nDRY RUN — nothing posted. Sends a Telegram preview for approval.")
+            _tg_preview(text, images[0][1] if images else None)
+            print("\nto actually post: add --publish")
+            return
 
-    # --- live publish (explicit human gate passed) ---
-    access = _access_token()
-    owner = _member_urn(access)
-    uploaded: list[tuple[str, str]] = []  # ordered (image URN, alt text)
-    for label, img in images:
-        try:
-            uploaded.append((_upload_image(access, owner, img),
-                             f"{post['title']} — {label}"))
-        except Exception as e:
-            # Non-fatal: keep whatever uploaded; with zero images LinkedIn
-            # renders a preview card from the article's OG image instead.
-            print(f"  {label} upload failed ({str(e)[:100]}); continuing")
-    if images and not uploaded:
-        print("  all image uploads failed; posting text-only")
-    post_urn = _create_post(access, owner, _escape_little(text), images=uploaded)
-    print("posted:", post_urn)
-    # Record on the post so we don't double-post and so `edit` can find it.
-    # Store the UNescaped caption so edits/display work from clean text.
-    from google.cloud import firestore
-    db = firestore.Client(project=FIRESTORE_PROJECT, database=FIRESTORE_DB)
-    db.collection("blogPosts").document(a.slug).update({"linkedinPost": text,
-                                                        "linkedinPostId": post_urn})
+        # --- live publish (explicit human gate passed) ---
+        access = _access_token()
+        owner = _member_urn(access)
+        uploaded: list[tuple[str, str]] = []  # ordered (image URN, alt text)
+        for label, img in images:
+            try:
+                uploaded.append((_upload_image(access, owner, img),
+                                 f"{post['title']} — {label}"))
+            except Exception as e:
+                # Non-fatal: keep whatever uploaded; with zero images LinkedIn
+                # renders a preview card from the article's OG image instead.
+                print(f"  {label} upload failed ({str(e)[:100]}); continuing")
+        if images and not uploaded:
+            print("  all image uploads failed; posting text-only")
+        post_urn = _create_post(access, owner, _escape_little(text), images=uploaded)
+        print("posted:", post_urn)
+        # Record on the post so we don't double-post and so `edit` can find it.
+        # Store the UNescaped caption so edits/display work from clean text.
+        from google.cloud import firestore
+        db = firestore.Client(project=FIRESTORE_PROJECT, database=FIRESTORE_DB)
+        db.collection("blogPosts").document(a.slug).update({"linkedinPost": text,
+                                                            "linkedinPostId": post_urn})
+    finally:
+        _cleanup_tmp_images(images)
 
 
 def cmd_edit(a):
