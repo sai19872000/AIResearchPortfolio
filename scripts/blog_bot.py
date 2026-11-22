@@ -186,7 +186,7 @@ def cmd_queue(db=None):
 
 # ---- approval notifications + callbacks ---------------------------------
 def _draft_image(post: dict) -> str | None:
-    featured = post.get("sourceScreenshot") or post.get("heroImage")
+    featured = post.get("sourceScreenshot") or post.get("leadFigureImage") or post.get("heroImage")
     if featured:
         return featured
     m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")

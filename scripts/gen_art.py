@@ -85,11 +85,15 @@ PROMPTS = {
         "No text, no words, no letters."
     ),
     "infographic": (
-        BRAND + "A clean 1200x1200 infographic/diagram that shows: {concept}. "
-        "Lay out real structure — labelled nodes, a small flow, or a compact "
-        "comparison — on a 4px grid with legible correctly-spelled UPPERCASE mono "
-        "labels, thin amber and teal connectors on obsidian. One screen, high "
-        "contrast, readable on a phone. Diagram, not illustration."
+        BRAND + "A clean 1200x1200 editorial-report conceptual diagram (Pudding visual-essay "
+        "grammar on Auracle dark) that shows: {concept}. "
+        "Strict visual discipline: ONE claim title in crisp sentence-case at the top, ONE "
+        "short how-to-read subtitle underneath; draw structural framing and background context "
+        "in muted neutral slate-grey (#2A323B / #3A4552), highlight ONLY the single focal "
+        "subject or key takeaway in warm amber (#F2A85B), and use cool teal (#46C8DD) only "
+        "when contrasting a second distinct entity. Direct, correctly-spelled UPPERCASE mono "
+        "labels on a 4px grid, no standalone legend box, no decorative glow, no pie/3D charts, "
+        "and a thin muted source/caption footer line. One screen, high contrast, readable on a phone."
     ),
 }
 

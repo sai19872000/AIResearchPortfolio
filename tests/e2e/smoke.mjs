@@ -30,9 +30,14 @@ await check('/blog lists 30 posts, paginates, newest first', async (page) => {
   assert.equal(await page.locator('ol > li').count(), 4)
 })
 
-await check('post renders markdown, canonical, twitter image, JSON-LD', async (page) => {
+await check('post renders markdown, editorial stats/figure/mark, canonical, twitter image, JSON-LD', async (page) => {
   await page.goto(BASE + '/blog/fixture-post-01')
   await page.getByRole('heading', { name: 'Heading 1' }).waitFor()
+  await page.locator('.ed-stats .ed-stat').first().waitFor()
+  await page.locator('.ed-figure.ed-wide svg.ed-chart').waitFor()
+  assert.equal(await page.locator('.ed mark').innerText(), 'highlighted claim')
+  assert.equal(await page.locator('.ed sup').innerText(), '10')
+  assert.ok(!(await page.locator('article').innerText()).includes('<sup>'))
   assert.match(await page.locator('link[rel=canonical]').getAttribute('href'), /\/blog\/fixture-post-01$/)
   assert.match(await page.locator('meta[name="twitter:image"]').getAttribute('content'), /og\.png$/)
   const ld = JSON.parse(await page.locator('script[type="application/ld+json"]').innerText())

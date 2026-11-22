@@ -15,9 +15,14 @@ public art bucket, printing the URL.
 
 1. **One hero image** — abstract, cinematic, evokes the post's idea (never a
    literal scene, never text in the image).
-2. **One to two inline infographics** — ONLY where a concept is genuinely
-   clearer shown than told (an architecture, a tradeoff, a pipeline, a
-   comparison). Skip them if the post is purely narrative. Never decorative.
+2. **Conceptual diagram(s) when non-quantitative** — ONLY for architectures,
+   system stacks, pipelines, or mental models where a concept is clearer shown
+   than told (never for quantitative data/curves/benchmarks: use the
+   `editorial-report` skill's inline SVG ```` ```figure ```` blocks for real
+   numbers so coordinates are exact). Every Nano Banana diagram must follow the
+   `editorial-report` colour discipline: muted slate-grey for context/structure,
+   warm amber (`#F2A85B`) ONLY on the focal claim, cool teal (`#46C8DD`) only
+   for a genuine second-entity comparison, claim title at top, direct labels.
 
 ## How to render
 
