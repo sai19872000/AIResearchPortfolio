@@ -423,16 +423,21 @@ def _linkedin_image_urls(post: dict) -> list[tuple[str, str]]:
     """Ordered LinkedIn media as (label, url): the featured image FIRST (the
     same image highlighted on the article page — a screenshot of the
     original sourceUrl when captured, else the generated heroImage), then the
-    first inline infographic. Deduped; either slot may be absent. Order
-    matters — LinkedIn renders multiImage in array order, first = primary."""
+    lead editorial figure (rasterized SVG chart when present) or the first
+    inline infographic. Deduped; either slot may be absent. Order matters —
+    LinkedIn renders multiImage in array order, first = primary."""
     import re
     out: list[tuple[str, str]] = []
     featured = (post.get("sourceScreenshot") or post.get("heroImage") or "").strip()
     if featured:
         out.append(("featured image", featured))
-    m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
-    if m and m.group(1) != featured:
-        out.append(("infographic", m.group(1)))
+    lead_fig = (post.get("leadFigureImage") or "").strip()
+    if lead_fig and lead_fig != featured:
+        out.append(("chart figure", lead_fig))
+    else:
+        m = re.search(r"!\[[^\]]*\]\((https?://[^)\s]+)\)", post.get("content") or "")
+        if m and m.group(1) != featured:
+            out.append(("infographic", m.group(1)))
     return out
 
 

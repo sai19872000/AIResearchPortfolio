@@ -4,7 +4,7 @@
   "slug": "fixture-post-01",
   "title": "Fixture post 01",
   "summary": "Summary of fixture post 1.",
-  "content": "## Heading 1\n\nBody of **fixture post 1** with a [link](https://example.com).\n",
+  "content": "## Heading 1\n\nBody of **fixture post 1** with ==highlighted claim==, 0.95<sup>10</sup>, and a [link](https://example.com).\n\n```stats\n60% | ten-step task success | at 95% per step\n10 | tool steps | independent failure model\n```\n\n```figure\ntitle: Ten steps turn 95% step accuracy into 60% task success\ndek: Cumulative reliability across steps.\nsource: Formula: 0.95^n.\nalt: Line chart falling from 95% at step 1 to 60% at step 10.\nwidth: wide\n\n<svg class=\"ed-chart\" viewBox=\"0 0 640 160\"><line class=\"baseline\" x1=\"40\" y1=\"130\" x2=\"600\" y2=\"130\"/><path class=\"subj-line\" d=\"M40,20 L600,80\"/><text class=\"lbl-subj\" x=\"604\" y=\"84\">60%</text></svg>\n```\n",
   "tags": [
    "fixture",
    "test"

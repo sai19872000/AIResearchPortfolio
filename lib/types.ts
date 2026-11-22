@@ -21,6 +21,7 @@ export interface BlogPost {
   diagrams: Diagram[] // Phase 2
   sourceUrl: string | null
   sourceScreenshot: string | null // headless-Chrome capture of sourceUrl; the featured image when present
+  leadFigureImage?: string | null // headless-Chrome PNG raster of the lead ```figure SVG for LinkedIn/Telegram
 }
 
 /** The fields the blog index / sitemap need — no markdown body. */

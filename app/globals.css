@@ -89,6 +89,7 @@ html { scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-relaxed);
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; font-optical-sizing: auto;
 }
 h1, h2, h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: var(--tracking-display); }
@@ -212,6 +213,316 @@ a.au-card:hover { border-color: var(--line-2); background: var(--surface-raised)
 .prose pre code { background: none; border: none; padding: 0; color: var(--text-muted); font-size: var(--text-sm); }
 .prose img { max-width: 100%; height: auto; border-radius: var(--radius-card); border: 1px solid var(--line); }
 .prose hr { border: none; border-top: 1px solid var(--line); }
-.prose table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.prose table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); font-variant-numeric: tabular-nums lining-nums; }
 .prose th, .prose td { border-bottom: 1px solid var(--line); padding: 8px 12px; text-align: left; }
 .prose th { color: var(--text); font-weight: 600; }
+
+/* ============================================================
+   Editorial-report layer (Pudding grammar on Auracle dark)
+   Scoped under .ed so only article bodies inherit it.
+   ============================================================ */
+.ed {
+  --ed-paper:    var(--bg);
+  --ed-ink:      var(--text);
+  --ed-muted:    var(--text-muted);
+  --ed-faint:    var(--text-faint);
+  --ed-rule:     rgba(255,255,255,.10);
+  --ed-context:  #3A4552;
+  --ed-accent:   var(--warm);
+  --ed-accent-2: var(--cool);
+  --ed-mark:     rgba(242,168,91,.24);
+  --ed-serif:    var(--font-display);
+  --ed-sans:     var(--font-body);
+  --ed-display:  var(--font-display);
+  --ed-mono:     var(--font-mono);
+
+  /* Paul Tol bright — CVD-safe categorical palette beyond 2 series */
+  --ed-cat-1: #66CCEE; --ed-cat-2: #EE6677; --ed-cat-3: #74D99A;
+  --ed-cat-4: #CCBB44; --ed-cat-5: #4477AA; --ed-cat-6: #AA3377; --ed-cat-7: #BBBBBB;
+
+  --ed-wide: 60rem;
+  font-feature-settings: "kern" 1, "liga" 1;
+  font-variant-numeric: lining-nums;
+}
+
+/* Highlighter pen (`==text==`) */
+.ed mark {
+  color: var(--ed-ink);
+  background: linear-gradient(100deg,
+    transparent 0.14em, var(--ed-mark) 0.28em,
+    var(--ed-mark) calc(100% - 0.28em), transparent calc(100% - 0.14em));
+  padding: 0.04em 0.3em;
+  margin: 0 -0.08em;
+  border-radius: 3px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.ed sup, .ed sub { font-size: 0.72em; line-height: 0; position: relative; vertical-align: baseline; }
+.ed sup { top: -0.45em; }
+.ed sub { bottom: -0.22em; }
+
+/* Tabular numeric table cells & highlighted rows */
+.ed thead th {
+  font-family: var(--ed-mono);
+  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ed-faint);
+}
+.ed td.num, .ed th.num {
+  text-align: right;
+  font-family: var(--ed-mono);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.ed tbody tr.hl td, .ed tbody tr:has(mark) td {
+  background: rgba(242,168,91,.09);
+}
+
+/* Inline legend chip */
+.ed .ed-chip {
+  --c: var(--ed-accent);
+  font-family: var(--ed-sans);
+  font-weight: 600;
+  font-size: 0.92em;
+  white-space: nowrap;
+  color: var(--ed-ink);
+  border-bottom: 2px solid var(--c);
+  padding: 0 0.1em;
+}
+.ed .ed-chip::before {
+  content: "";
+  display: inline-block;
+  width: 0.58em;
+  height: 0.58em;
+  border-radius: 50%;
+  background: var(--c);
+  margin-right: 0.3em;
+  vertical-align: 0.04em;
+}
+
+/* Editorial aside inside figures */
+.ed .ed-aside {
+  font-family: var(--ed-sans);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  background: var(--surface);
+  border: 1px solid var(--ed-rule);
+  border-left: 3px solid var(--ed-accent);
+  border-radius: var(--radius-sm);
+  padding: 0.95rem 1.1rem;
+  color: var(--ed-muted);
+}
+
+/* Stat row: big-number callout strip */
+.ed .ed-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 1.25rem 1.6rem;
+  margin: 2rem 0 2.4rem;
+  padding: 1.2rem 0;
+  border-top: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--ed-rule);
+}
+.ed .ed-stat .n {
+  display: block;
+  font-family: var(--ed-display);
+  font-weight: 600;
+  font-size: clamp(1.85rem, 4vw, 2.55rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--ed-ink);
+}
+.ed .ed-stat:first-child .n { color: var(--ed-accent); }
+.ed .ed-stat .l {
+  display: block;
+  font-family: var(--ed-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ed-muted);
+  margin-top: 0.48rem;
+  line-height: 1.35;
+}
+.ed .ed-stat .c {
+  display: block;
+  font-family: var(--ed-sans);
+  font-size: 0.84rem;
+  color: var(--ed-faint);
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+
+/* Figures: title (claim) -> dek (how to read) -> SVG graphic -> source */
+.ed .ed-figure {
+  margin: 2.4rem 0 2.8rem;
+  padding: 1.35rem 1.45rem 1.15rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  break-inside: avoid;
+}
+.ed .ed-figure.ed-wide {
+  margin-left:  min(0px, max(calc(50% - var(--ed-wide) / 2), calc(50% - 50vw + 1.25rem)));
+  margin-right: min(0px, max(calc(50% - var(--ed-wide) / 2), calc(50% - 50vw + 1.25rem)));
+}
+.ed .ed-fig-title {
+  font-family: var(--ed-display);
+  font-weight: 600;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--ed-ink);
+  margin: 0 0 0.35rem;
+  text-wrap: balance;
+}
+.ed .ed-fig-dek {
+  font-family: var(--ed-sans);
+  font-size: 0.92rem;
+  line-height: 1.48;
+  color: var(--ed-muted);
+  margin: 0 0 1.05rem;
+}
+.ed .ed-fig-body { position: relative; }
+.ed .ed-fig-body > svg, .ed .ed-fig-body > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.ed .ed-fig-fallback {
+  font-family: var(--ed-mono);
+  font-size: 0.8rem;
+  color: var(--ed-faint);
+  padding: 1rem;
+  border: 1px dashed var(--ed-rule);
+  border-radius: var(--radius-sm);
+}
+.ed .ed-fig-source {
+  font-family: var(--ed-mono);
+  font-size: 0.7rem;
+  line-height: 1.48;
+  color: var(--ed-faint);
+  margin: 0.85rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--ed-rule);
+}
+
+/* SVG chart grammar (token-driven, never inline hardcoded colours) */
+.ed svg.ed-chart {
+  font-family: var(--ed-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.ed svg.ed-chart text { fill: var(--ed-muted); }
+.ed svg.ed-chart .axis-title {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  fill: var(--ed-faint);
+}
+.ed svg.ed-chart .baseline,
+.ed svg.ed-chart .axis line,
+.ed svg.ed-chart .axis path {
+  stroke: rgba(234,237,239,.45);
+  stroke-width: 1;
+  fill: none;
+}
+.ed svg.ed-chart .grid line,
+.ed svg.ed-chart line.grid {
+  stroke: var(--ed-rule);
+  stroke-width: 1;
+}
+.ed svg.ed-chart .ctx        { fill: var(--ed-context); stroke: none; transition: opacity 200ms ease; }
+.ed svg.ed-chart .ctx-line   { fill: none; stroke: var(--ed-context); stroke-width: 1.35; transition: opacity 200ms ease; }
+.ed svg.ed-chart .subj       { fill: var(--ed-accent); stroke: none; transition: opacity 200ms ease; }
+.ed svg.ed-chart .subj-line  { fill: none; stroke: var(--ed-accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ed svg.ed-chart .subj2      { fill: var(--ed-accent-2); stroke: none; transition: opacity 200ms ease; }
+.ed svg.ed-chart .subj2-line { fill: none; stroke: var(--ed-accent-2); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ed svg.ed-chart .band       { fill: var(--ed-accent); opacity: 0.16; }
+.ed svg.ed-chart .dim        { opacity: 0.25; }
+.ed svg.ed-chart .cat-1 { fill: var(--ed-cat-1); }
+.ed svg.ed-chart .cat-2 { fill: var(--ed-cat-2); }
+.ed svg.ed-chart .cat-3 { fill: var(--ed-cat-3); }
+.ed svg.ed-chart .cat-4 { fill: var(--ed-cat-4); }
+.ed svg.ed-chart .cat-5 { fill: var(--ed-cat-5); }
+.ed svg.ed-chart .cat-6 { fill: var(--ed-cat-6); }
+.ed svg.ed-chart .ref    { stroke: rgba(234,237,239,.55); stroke-width: 1; stroke-dasharray: 4 3; fill: none; }
+.ed svg.ed-chart .leader { stroke: rgba(234,237,239,.45); stroke-width: 0.85; fill: none; }
+.ed svg.ed-chart .lbl        { fill: var(--ed-ink); font-size: 11.5px; }
+.ed svg.ed-chart .lbl-subj   { fill: var(--ed-accent); font-weight: 700; font-size: 12px; }
+.ed svg.ed-chart .lbl-subj2  { fill: var(--ed-accent-2); font-weight: 700; font-size: 12px; }
+.ed svg.ed-chart .annot      { fill: var(--ed-ink); font-family: var(--ed-sans); font-size: 12.5px; }
+.ed svg.ed-chart .annot-strong { fill: var(--ed-ink); font-family: var(--ed-sans); font-size: 12.5px; font-weight: 700; }
+.ed svg.ed-chart .halo {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+/* Step sequence: flattened scrollytelling frames (2-4 numbered panels) */
+.ed .ed-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 1.2rem;
+  counter-reset: ed-step;
+}
+.ed .ed-step { counter-increment: ed-step; }
+.ed .ed-step > .ed-step-cap {
+  font-family: var(--ed-sans);
+  font-size: 0.86rem;
+  line-height: 1.42;
+  color: var(--ed-muted);
+  margin: 0.55rem 0 0;
+}
+.ed .ed-step > .ed-step-cap::before {
+  content: counter(ed-step);
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-right: 0.45rem;
+  border: 1px solid var(--ed-accent);
+  color: var(--ed-accent);
+  border-radius: 2em;
+  font-family: var(--ed-mono);
+  font-size: 0.68rem;
+}
+
+/* Small multiples */
+.ed .ed-multiples {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: 1rem 1.2rem;
+}
+.ed .ed-multiples .ed-mult-title {
+  font-family: var(--ed-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ed-muted);
+  margin: 0 0 0.35rem;
+}
+
+/* Mobile: keep chart text legible; scroll sideways inside figure with soft edge cues */
+@media screen and (max-width: 40rem) {
+  .ed .ed-figure { padding: 1rem 1rem 0.95rem; }
+  .ed .ed-figure.ed-wide { margin-left: 0; margin-right: 0; }
+  .ed .ed-fig-body {
+    overflow-x: auto;
+    background:
+      linear-gradient(to right, var(--surface) 30%, transparent) left / 2rem 100% no-repeat local,
+      linear-gradient(to left, var(--surface) 30%, transparent) right / 2rem 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.45), transparent) left / .75rem 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.45), transparent) right / .75rem 100% no-repeat scroll;
+  }
+  .ed .ed-fig-body > svg.ed-chart { min-width: 34rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed * { transition: none !important; animation: none !important; }
+}
